@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --bg-primary: #F7F7F8;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F5F3FF;
+    --text-primary: #171717;
+    --text-secondary: #52525B;
+    --text-tertiary: #A1A1AA;
+    --border-color: rgba(23, 23, 23, 0.08);
+    --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+    --color-mint: #A8E6CF;
+    --color-peach: #FFB7A5;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+    --bg-primary: #0F0F10;
+    --bg-secondary: #1A1A1C;
+    --bg-tertiary: #1A1759;
+    --text-primary: #E5E5E5;
+    --text-secondary: #A1A1AA;
+    --text-tertiary: #71717A;
+    --border-color: rgba(229, 229, 229, 0.08);
+    --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  * {
+    @apply transition-theme duration-200;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  /* 滚动条美化 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+  }
+
+  /* 选中文字颜色 */
+  ::selection {
+    background-color: rgba(124, 107, 196, 0.2);
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-[#1A1A1C] rounded-card shadow-soft p-5;
+    border: 1px solid var(--border-color);
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200;
+  }
+
+  .card-hover:hover {
+    @apply shadow-soft-lg -translate-y-0.5;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white rounded-button px-5 py-2.5 font-medium
+           hover:bg-primary-700 active:scale-95 transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border rounded-button px-5 py-2.5 font-medium
+           hover:bg-[var(--bg-tertiary)] active:scale-95 transition-all duration-150;
+    border-color: var(--border-color);
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white rounded-button px-5 py-2.5 font-medium
+           hover:opacity-90 active:scale-95 transition-all duration-150;
+  }
+
+  .input {
+    @apply w-full bg-transparent border border-[var(--border-color)] rounded-input px-4 py-2.5
+           text-[var(--text-primary)] placeholder-[var(--text-tertiary)]
+           focus:outline-none focus:ring-2 focus:ring-primary-600/30 focus:border-primary-600
+           transition-all duration-200;
+  }
+
+  .input-dark {
+    @apply input bg-[var(--bg-secondary)];
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-button text-[var(--text-secondary)]
+           hover:bg-[var(--bg-tertiary)] hover:text-primary-600
+           transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-item.active {
+    @apply bg-primary-600 text-white hover:bg-primary-700 hover:text-white;
+  }
+
+  .tag-pill {
+    @apply inline-flex items-center px-2.5 py-1 rounded-pill text-xs font-medium
+           bg-[var(--bg-tertiary)] text-primary-600;
+  }
+
+  .priority-high {
+    @apply text-danger bg-red-50 dark:bg-red-950/30;
+  }
+
+  .priority-medium {
+    @apply text-warning bg-amber-50 dark:bg-amber-950/30;
+  }
+
+  .priority-low {
+    @apply text-success bg-emerald-50 dark:bg-emerald-950/30;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50
+           flex items-center justify-center p-4;
+  }
+
+  .modal-content {
+    @apply bg-[var(--bg-secondary)] rounded-card shadow-soft-lg w-full max-w-lg
+           max-h-[85vh] overflow-auto;
+  }
+
+  .page-container {
+    @apply flex-1 overflow-auto p-6;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold text-[var(--text-primary)] mb-6;
+  }
+
+  .section-title {
+    @apply text-lg font-medium text-[var(--text-primary)] mb-4;
+  }
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-[var(--text-tertiary)];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
