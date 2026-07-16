@@ -1,0 +1,105 @@
+{
+    "name":  "privahub",
+    "version":  "1.1.7",
+    "description":  "PrivaHub - 您的私人工作台",
+    "main":  "dist-electron/main.js",
+    "scripts":  {
+                    "dev":  "concurrently \"npm run dev:web\" \"wait-on http://localhost:5173 \u0026\u0026 npm run dev:electron\"",
+                    "dev:web":  "vite",
+                    "dev:electron":  "electron dist-electron/main.js",
+                    "build":  "vite build",
+                    "build:win":  "npm run build \u0026\u0026 electron-builder --win",
+                    "build:publish":  "npm run build \u0026\u0026 electron-builder --win --publish always",
+                    "release:cleanup":  "node scripts/cleanup-releases.mjs",
+                    "release:cleanup-dry":  "node scripts/cleanup-releases.mjs --dry-run",
+                    "dist":  "npm run build \u0026\u0026 electron-builder",
+                    "lint":  "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+                    "preview":  "vite preview",
+                    "build:electron":  "esbuild electron/main.ts --bundle --platform=node --outfile=dist-electron/main.js --format=cjs --external:electron --external:\"node:*\" --minify \u0026\u0026 esbuild electron/preload.ts --bundle --platform=node --outfile=dist-electron/preload.js --format=cjs --external:electron --external:\"node:*\" --minify"
+                },
+    "dependencies":  {
+                         "electron-updater":  "^6.3.9"
+                     },
+    "devDependencies":  {
+                            "@dnd-kit/core":  "^6.1.0",
+                            "@dnd-kit/sortable":  "^8.0.0",
+                            "@dnd-kit/utilities":  "^3.2.2",
+                            "@supabase/supabase-js":  "^2.43.0",
+                            "@types/node":  "^20.12.12",
+                            "@types/react":  "^18.3.2",
+                            "@types/react-dom":  "^18.3.0",
+                            "@typescript-eslint/eslint-plugin":  "^7.9.0",
+                            "@typescript-eslint/parser":  "^7.9.0",
+                            "@vitejs/plugin-react":  "^4.2.1",
+                            "autoprefixer":  "^10.4.19",
+                            "concurrently":  "^8.2.2",
+                            "date-fns":  "^3.6.0",
+                            "echarts":  "^5.5.0",
+                            "echarts-for-react":  "^3.0.2",
+                            "electron":  "^30.0.3",
+                            "electron-builder":  "^24.13.3",
+                            "esbuild":  "^0.28.1",
+                            "eslint":  "^8.57.0",
+                            "eslint-plugin-react-hooks":  "^4.6.2",
+                            "eslint-plugin-react-refresh":  "^0.4.7",
+                            "framer-motion":  "^11.1.0",
+                            "html2canvas":  "^1.4.1",
+                            "postcss":  "^8.4.38",
+                            "react":  "^18.3.1",
+                            "react-calendar":  "^5.0.0",
+                            "react-dom":  "^18.3.1",
+                            "react-router-dom":  "^6.23.1",
+                            "tailwindcss":  "^3.4.3",
+                            "typescript":  "^5.4.5",
+                            "vite":  "^5.2.11",
+                            "vite-plugin-electron":  "^0.28.7",
+                            "vite-plugin-electron-renderer":  "^0.14.5",
+                            "wait-on":  "^7.2.0",
+                            "zustand":  "^4.5.2"
+                        },
+    "build":  {
+                  "appId":  "com.privahub.app",
+                  "productName":  "PrivaHub",
+                  "directories":  {
+                                      "output":  "release"
+                                  },
+                  "win":  {
+                              "target":  [
+                                             {
+                                                 "target":  "nsis",
+                                                 "arch":  [
+                                                              "x64"
+                                                          ]
+                                             }
+                                         ],
+                              "icon":  "build/icon.png",
+                              "signingHashAlgorithms":  [
+                                                            "sha256"
+                                                        ],
+                              "sign":  null
+                          },
+                  "nsis":  {
+                               "oneClick":  false,
+                               "allowToChangeInstallationDirectory":  true,
+                               "createDesktopShortcut":  true,
+                               "createStartMenuShortcut":  true,
+                               "shortcutName":  "PrivaHub",
+                               "perMachine":  false,
+                               "allowElevation":  true
+                           },
+                  "files":  [
+                                "dist/**/*",
+                                "dist-electron/**/*",
+                                "build/**/*",
+                                "!node_modules",
+                                "!**/node_modules/**",
+                                "!**/*.map"
+                            ],
+                  "asar":  true,
+                  "publish":  {
+                                  "provider":  "github",
+                                  "owner":  "JasperPujo",
+                                  "repo":  "PrivaHub"
+                              }
+              }
+}
