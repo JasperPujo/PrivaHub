@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- PrivaHub 完整数据库 Schema
 -- 在 Supabase SQL Editor 中执行此脚本
 -- ============================================================
@@ -266,7 +266,7 @@ CREATE OR REPLACE FUNCTION public.create_rls_policies()
 RETURNS void AS $$
 DECLARE
   t text;
-  tables text[] := ARRAY['users','tasks','schedules','plans','habits','note_walls','notes','tracker_categories','tracker_entries','user_settings','focus_sessions','sync_logs','tags'];
+  tables text[] := ARRAY['tasks','schedules','plans','habits','note_walls','notes','tracker_categories','tracker_entries','user_settings','focus_sessions','sync_logs','tags'];
 BEGIN
   FOREACH t IN ARRAY tables
   LOOP
