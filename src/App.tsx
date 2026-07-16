@@ -85,7 +85,7 @@ function App() {
       migrateOldIds()
       // 版本检测：新版本安装后强制重新登录
       const storedVersion = localStorage.getItem('privahub-app-version')
-      const currentVersion = '1.1.7'
+      const currentVersion = '1.1.8'
       if (storedVersion !== currentVersion) {
         await supabase.auth.signOut()
         localStorage.setItem('privahub-app-version', currentVersion)

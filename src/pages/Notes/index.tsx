@@ -343,12 +343,11 @@ const NotesPage: React.FC = () => {
               <audio
                 key={audioIdx}
                 controls
+                src={audio}
                 className="w-full"
                 style={{ height: '36px' }}
-              >
-                <source src={audio} />
-                您的浏览器不支持音频播放
-              </audio>
+                preload="metadata"
+              />
             ))}
           </div>
         )}
@@ -755,12 +754,11 @@ const NotesPage: React.FC = () => {
                       <audio
                         key={i}
                         controls
+                        src={audio}
                         className="w-full"
                         style={{ height: '36px' }}
-                      >
-                        <source src={audio} />
-                        您的浏览器不支持音频播放
-                      </audio>
+                        preload="metadata"
+                      />
                     ))}
                   </div>
                 )}
