@@ -186,7 +186,7 @@ const NotesPage: React.FC = () => {
     if (!files) return
 
     Array.from(files).forEach(file => {
-      if (!file.type.startsWith('audio/') && !file.name.endsWith('.mp3') && !file.name.endsWith('.wav') && !file.name.endsWith('.ogg')) return
+      if (!file.type.startsWith('audio/') && !file.name.endsWith('.mp3') && !file.name.endsWith('.wav') && !file.name.endsWith('.ogg') && !file.name.endsWith('.aac')) return
       if (noteForm.audios.length >= 3) return // 最多3个音频
 
       const reader = new FileReader()
@@ -608,7 +608,7 @@ const NotesPage: React.FC = () => {
             <input
               ref={audioInputRef}
               type="file"
-              accept="audio/*,.mp3,.wav,.ogg"
+              accept="audio/*,.mp3,.wav,.ogg,.aac"
               multiple
               onChange={handleAudioUpload}
               className="hidden"
