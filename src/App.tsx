@@ -83,17 +83,12 @@ function App() {
     const initSession = async () => {
       // 迁移旧版非标准 ID 到标准 UUID
       migrateOldIds()
-      // 版本检测：新版本安装后强制重新登录
-      const storedVersion = localStorage.getItem('privahub-app-version')
-      const currentVersion = '1.1.8'
-      if (storedVersion !== currentVersion) {
-        await supabase.auth.signOut()
-        localStorage.setItem('privahub-app-version', currentVersion)
-        setCheckingSession(false)
-        return
-      }
+      // persistSession=false，不会有本地 session，每次启动都需要重新登录
+      setCheckingSession(false)
+      return
+      // 以下代码保留但不执行
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
+      if (false && session?.user) {
         const { data: userData } = await supabase
           .from('users')
           .select('*')

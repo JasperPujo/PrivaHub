@@ -78,6 +78,23 @@ const Login: React.FC = () => {
       .eq('id', data.user.id)
       .single()
 
+    // 如果 public.users 表中没有记录，自动创建
+    if (!userData) {
+      const newRecord = {
+        id: data.user.id,
+        email: data.user.email || loginForm.username,
+        username: loginForm.username.split('@')[0],
+        name: loginForm.username.split('@')[0],
+        role: 'user',
+      }
+      const { error: insertErr } = await supabase.from('users').upsert(newRecord)
+      if (insertErr) {
+        console.error('[Login] Failed to create user record:', insertErr.message, insertErr.code)
+      } else {
+        console.log('[Login] User record created successfully')
+      }
+    }
+
     // 从 localStorage 读取备用头像
     const cachedAvatar = localStorage.getItem('user_avatar_' + data.user.id)
 
