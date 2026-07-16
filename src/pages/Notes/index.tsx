@@ -350,16 +350,32 @@ const NotesPage: React.FC = () => {
         {/* 音频播放区域 */}
         {hasAudios && (
           <div className="mt-3 space-y-2">
-            {note.audio_ids!.map((audio, audioIdx) => (
-              <audio
-                key={audioIdx}
-                controls
-                src={audio}
-                className="w-full"
-                style={{ height: '36px' }}
-                preload="metadata"
-              />
-            ))}
+            {note.audio_ids!.map((audio, audioIdx) => {
+              try {
+                // base64 -> Blob URL，避免 data URL 在 Electron 中的兼容问题
+                const mimeType = (audio.match(/^data:([^;]+)/) || [])[1] || 'audio/mpeg'
+                const base64 = audio.split(',')[1]
+                if (!base64) return <div key={audioIdx} className="text-xs opacity-50">音频数据无效</div>
+                const byteChars = atob(base64)
+                const bytes = new Uint8Array(byteChars.length)
+                for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i)
+                const blob = new Blob([bytes], { type: mimeType })
+                const blobUrl = URL.createObjectURL(blob)
+                return (
+                  <audio
+                    key={audioIdx}
+                    controls
+                    src={blobUrl}
+                    className="w-full"
+                    style={{ height: '36px' }}
+                    preload="metadata"
+                  />
+                )
+              } catch (e) {
+                console.error('[Audio] Failed to load audio:', e)
+                return <div key={audioIdx} className="text-xs opacity-50">音频加载失败</div>
+              }
+            })}
           </div>
         )}
 
@@ -761,16 +777,31 @@ const NotesPage: React.FC = () => {
                 {/* 音频播放区域 */}
                 {note.audio_ids && note.audio_ids.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    {note.audio_ids.map((audio, i) => (
-                      <audio
-                        key={i}
-                        controls
-                        src={audio}
-                        className="w-full"
-                        style={{ height: '36px' }}
-                        preload="metadata"
-                      />
-                    ))}
+                    {note.audio_ids.map((audio, i) => {
+                      try {
+                        const mimeType = (audio.match(/^data:([^;]+)/) || [])[1] || 'audio/mpeg'
+                        const base64 = audio.split(',')[1]
+                        if (!base64) return <div key={i} className="text-xs opacity-50">音频数据无效</div>
+                        const byteChars = atob(base64)
+                        const bytes = new Uint8Array(byteChars.length)
+                        for (let j = 0; j < byteChars.length; j++) bytes[j] = byteChars.charCodeAt(j)
+                        const blob = new Blob([bytes], { type: mimeType })
+                        const blobUrl = URL.createObjectURL(blob)
+                        return (
+                          <audio
+                            key={i}
+                            controls
+                            src={blobUrl}
+                            className="w-full"
+                            style={{ height: '36px' }}
+                            preload="metadata"
+                          />
+                        )
+                      } catch (e) {
+                        console.error('[Audio Modal] Failed to load audio:', e)
+                        return <div key={i} className="text-xs opacity-50">音频加载失败</div>
+                      }
+                    })}
                   </div>
                 )}
                 <p className="text-sm text-[var(--text-tertiary)] mt-3">{formatTime(note.created_at)}</p>
