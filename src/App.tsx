@@ -123,7 +123,12 @@ function App() {
             created_at: session.user.created_at,
             updated_at: session.user.updated_at || session.user.created_at,
           }
-          await supabase.from('users').upsert(newUser)
+          const { error: upsertError } = await supabase.from('users').upsert(newUser)
+          if (upsertError) {
+            console.error('[App] Failed to create user record:', upsertError.message, upsertError.code)
+          } else {
+            console.log('[App] User record created successfully')
+          }
           setUser({
             id: newUser.id,
             email: newUser.email,

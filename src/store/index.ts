@@ -2,7 +2,7 @@
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User, UserSettings, Task, Schedule, Habit, Plan, NoteWall, Note, Tag, ModuleConfig, LockScreenState, TrackerCategory, TrackerEntry } from '@/types'
 
-const APP_VERSION = '1.1.7'
+const APP_VERSION = '1.1.8'
 
 // 模块配置
 const defaultModules: ModuleConfig[] = [

@@ -186,13 +186,24 @@ const NotesPage: React.FC = () => {
     if (!files) return
 
     Array.from(files).forEach(file => {
-      if (!file.type.startsWith('audio/') && !file.name.endsWith('.mp3') && !file.name.endsWith('.wav') && !file.name.endsWith('.ogg') && !file.name.endsWith('.aac')) return
+      const ext = file.name.split('.').pop()?.toLowerCase() || ''
+      const isAudio = file.type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac'].includes(ext)
+      if (!isAudio) return
       if (noteForm.audios.length >= 3) return // 最多3个音频
 
       const reader = new FileReader()
       reader.onload = (event) => {
-        const result = event.target?.result as string
+        let result = event.target?.result as string
         if (result) {
+          // 修正 MIME type：如果系统未识别音频类型，根据扩展名强制修正
+          const mimeMap: Record<string, string> = {
+            mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
+            aac: 'audio/aac', m4a: 'audio/mp4', flac: 'audio/flac'
+          }
+          const mime = mimeMap[ext]
+          if (mime && (!result.startsWith('data:audio/') || result.startsWith('data:application/octet-stream'))) {
+            result = result.replace(/^data:[^;]+/, 'data:' + mime)
+          }
           setNoteForm(prev => ({ ...prev, audios: [...prev.audios, result] }))
         }
       }
