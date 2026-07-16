@@ -112,14 +112,26 @@ function App() {
             updated_at: userData.updated_at,
           })
         } else {
-          setUser({
+          // public.users 表中没有记录，自动创建
+          const newUser = {
             id: session.user.id,
             email: session.user.email || '',
+            username: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
             avatar: session.user.user_metadata?.avatar || cachedAvatar || null,
             role: 'user',
             created_at: session.user.created_at,
             updated_at: session.user.updated_at || session.user.created_at,
+          }
+          await supabase.from('users').upsert(newUser)
+          setUser({
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            avatar: newUser.avatar,
+            role: newUser.role,
+            created_at: newUser.created_at,
+            updated_at: newUser.updated_at,
           })
         }
         // 自动登录成功后静默同步数据
