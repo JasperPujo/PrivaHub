@@ -109,6 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
 
       const { fullSync, noteWallToDb, noteWallFromDb, taskToDb, taskFromDb, scheduleToDb, scheduleFromDb, planToDb, planFromDb, habitToDb, habitFromDb, noteToDb, noteFromDb, trackerCategoryToDb, trackerEntryToDb } = await import('@/lib/sync')
 
+      // 手动同步：全量同步（不带 since 参数）
       const results = await fullSync(user.id, {
         noteWalls: { table: 'note_walls', getData: () => noteStore.walls, setData: (data: any) => noteStore.setWalls(data), toDbRow: noteWallToDb, fromDbRow: noteWallFromDb },
         tasks: { table: 'tasks', getData: () => todoStore.tasks, setData: (data: any) => todoStore.setTasks(data), toDbRow: taskToDb, fromDbRow: taskFromDb },
@@ -142,9 +143,61 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
       console.error('[Sync] Unhandled sync error:', err)
       addNotification({ message: '同步失败：' + (err.message || '未知错误'), type: 'error' })
     } finally {
+      const now = new Date().toISOString()
+      lastSyncTimeRef.current = now
       setSyncing(false)
     }
   }
+  // 自动定时同步（登录后每3分钟静默增量同步）
+  const autoSyncRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastSyncTimeRef = useRef<string | null>(lastSyncTime)
+
+  const silentSync = useCallback(async () => {
+    if (!user || isSyncing) return
+    const since = lastSyncTimeRef.current
+    try {
+      const { useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore, useTrackerStore } = await import('@/store')
+      const todoStore = useTodoStore.getState()
+      const scheduleStore = useScheduleStore.getState()
+      const planStore = usePlanStore.getState()
+      const habitStore = useHabitStore.getState()
+      const noteStore = useNoteStore.getState()
+      const trackerStore = useTrackerStore.getState()
+      const { fullSync, noteWallToDb, noteWallFromDb, taskToDb, taskFromDb, scheduleToDb, scheduleFromDb, planToDb, planFromDb, habitToDb, habitFromDb, noteToDb, noteFromDb, trackerCategoryToDb, trackerEntryToDb } = await import('@/lib/sync')
+
+      const now = new Date().toISOString()
+      await fullSync(user.id, {
+        noteWalls: { table: 'note_walls', getData: () => noteStore.walls, setData: (data: any) => noteStore.setWalls(data), toDbRow: noteWallToDb, fromDbRow: noteWallFromDb },
+        tasks: { table: 'tasks', getData: () => todoStore.tasks, setData: (data: any) => todoStore.setTasks(data), toDbRow: taskToDb, fromDbRow: taskFromDb },
+        schedules: { table: 'schedules', getData: () => scheduleStore.schedules, setData: (data: any) => scheduleStore.setSchedules(data), toDbRow: scheduleToDb, fromDbRow: scheduleFromDb },
+        plans: { table: 'plans', getData: () => planStore.plans, setData: (data: any) => planStore.setPlans(data), toDbRow: planToDb, fromDbRow: planFromDb },
+        habits: { table: 'habits', getData: () => habitStore.habits, setData: (data: any) => habitStore.setHabits(data), toDbRow: habitToDb, fromDbRow: habitFromDb },
+        notes: { table: 'notes', getData: () => noteStore.notes, setData: (data: any) => noteStore.setNotes(data), toDbRow: noteToDb, fromDbRow: noteFromDb },
+        trackerCategories: { table: 'tracker_categories', getData: () => trackerStore.categories, setData: (data: any) => trackerStore.setCategories(data), toDbRow: trackerCategoryToDb, fromDbRow: trackerEntryToDb },
+        trackerEntries: { table: 'tracker_entries', getData: () => trackerStore.entries, setData: (data: any) => trackerStore.setEntries(data), toDbRow: trackerEntryToDb, fromDbRow: trackerEntryToDb },
+      }, { since, parallel: true })
+
+      lastSyncTimeRef.current = now
+      setLastSyncTime(now)
+      console.log('[AutoSync] Silent sync completed at', now)
+    } catch (err: any) {
+      console.error('[AutoSync] Silent sync failed:', err)
+    }
+  }, [user, isSyncing, setLastSyncTime])
+
+  useEffect(() => {
+    if (user && isLoggedIn) {
+      // 首次登录后5秒执行一次静默同步
+      const timer = setTimeout(() => { silentSync() }, 5000)
+      // 之后每3分钟自动同步
+      autoSyncRef.current = setInterval(silentSync, 3 * 60 * 1000)
+      return () => {
+        clearTimeout(timer)
+        if (autoSyncRef.current) clearInterval(autoSyncRef.current)
+      }
+    }
+  }, [user, isLoggedIn, silentSync])
+
   return (
     <div className={`flex h-full w-full ${className || ''}`}>
       <motion.aside

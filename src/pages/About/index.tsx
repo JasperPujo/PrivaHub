@@ -26,7 +26,7 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
-    version: 'V1.1.9',
+    version: 'V1.2.0',
     date: '2026-07-16',
     changes: [
       '新增：习惯统计完成率折线图、专注统计折线图/箱型图/时段趋势面积图',
@@ -34,7 +34,7 @@ const changelog: ChangelogEntry[] = [
       '优化：留言展示优化（默认3条+查看更多Modal）',
       '优化：文字换行和日期溢出处理',
       '优化：设置页精简，关于页整合检查更新功能',
-      '修复：版本号更新至 V1.1.9',
+      '修复：版本号更新至 V1.2.0',
     ]
   },
   {
@@ -95,7 +95,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.1.9'
+        const currentVersion = '1.2.0'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -182,7 +182,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.1.9</span>
+            <span className="text-[#222] font-medium">V1.2.0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
@@ -279,7 +279,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.1.9</span>
+          <span className="text-sm text-[#555]">当前版本 V1.2.0</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}

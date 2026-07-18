@@ -230,7 +230,7 @@ const SettingsPage: React.FC = () => {
                 <span className="text-sm text-[var(--text-primary)]">关于 PrivaHub</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--text-tertiary)]">v1.1.9</span>
+                <span className="text-xs text-[var(--text-tertiary)]">v1.2.0</span>
                 <ChevronRight size={16} className="text-[var(--text-tertiary)]" />
               </div>
             </button>

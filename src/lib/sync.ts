@@ -142,16 +142,21 @@ export async function syncPush({ table, userId, data, idField = 'id', toDbRow }:
 
 
 /**
- * 全量拉取：从 Supabase 拉取用户数据
+ * 拉取：从 Supabase 拉取用户数据，支持增量（since 参数）
  */
-export async function syncPull(table: string, userId: string, fromDbRow?: (row: any) => any) {
+export async function syncPull(table: string, userId: string, fromDbRow?: (row: any) => any, since?: string | null) {
   if (!userId) return { success: false, data: [] }
 
   try {
-    const { data, error, status, statusText } = await supabase
+    let query = supabase
       .from(table)
       .select('*')
       .eq('user_id', userId)
+
+    // 增量：只拉取 updated_at 大于 since 的记录
+    if (since) {
+      query = query.gt('updated_at', since)
+    }
 
     if (error) {
       if (error.message?.includes('does not exist') || error.code === '42P01') {
@@ -223,7 +228,9 @@ export async function syncDelete(table: string, id: string) {
 }
 
 /**
- * 全量同步：先拉取远程，与本地数据合并（以 updated_at 较新的为准），再推送合并结果
+ * 同步：支持增量和并行
+ * @param since 如果提供，只拉取/推送 updated_at > since 的数据（增量模式）
+ * @param parallel 是否并行同步（默认 true）
  */
 export async function fullSync(userId: string, stores: Record<string, {
   table: string
@@ -231,44 +238,68 @@ export async function fullSync(userId: string, stores: Record<string, {
   setData: (data: any[]) => void
   toDbRow?: (item: any) => any
   fromDbRow?: (row: any) => any
-}>) {
+}>, options?: { since?: string | null; parallel?: boolean }) {
+  const since = options?.since || null
+  const useParallel = options?.parallel !== false
   const results: Record<string, any> = {}
 
-  for (const [key, { table, getData, setData, toDbRow, fromDbRow }] of Object.entries(stores)) {
+  const syncOne = async ([key, store]: [string, any]) => {
+    const { table, getData, setData, toDbRow, fromDbRow } = store
     try {
-      // 1. 拉取远程数据
-      const pullResult = await syncPull(table, userId, fromDbRow)
+      // 1. 拉取远程数据（增量或全量）
+      const pullResult = await syncPull(table, userId, fromDbRow, since)
       const remoteData = pullResult.success ? pullResult.data : []
 
       // 2. 获取本地数据
-      const localData = getData()
+      let localData = getData()
 
-      // 3. 合并：按 ID 去重，以 updated_at 较新的为准
-      const mergedMap = new Map<string, any>()
-
-      for (const item of localData) {
-        if (item && item.id) mergedMap.set(item.id, item)
+      // 增量模式下，只推送本地更新过的数据
+      let dataToPush = localData
+      if (since) {
+        dataToPush = localData.filter((item: any) => {
+          const t = item.updated_at || item.created_at || ''
+          return t > since
+        })
       }
 
-      for (const item of remoteData) {
-        if (!item || !item.id) continue
-        const existing = mergedMap.get(item.id)
-        const merged = mergeRecords(existing, item)
-        mergedMap.set(item.id, merged)
+      // 3. 合并远程拉取的数据到本地
+      if (remoteData.length > 0) {
+        const localMap = new Map(localData.map((item: any) => [item.id, item]))
+        for (const item of remoteData) {
+          if (!item?.id) continue
+          const existing = localMap.get(item.id)
+          const merged = mergeRecords(existing, item)
+          localMap.set(item.id, merged)
+        }
+        const mergedData = Array.from(localMap.values())
+        setData(mergedData)
+        // 合并后，推送也需要包含合并进来的远程新数据
+        dataToPush = mergedData.filter((item: any) => {
+          const t = item.updated_at || item.created_at || ''
+          return !since || t > since
+        })
       }
 
-      const mergedData = Array.from(mergedMap.values())
-
-      // 4. 写回本地
-      setData(mergedData)
-
-      // 5. 推送合并结果到远程
-      const pushResult = await syncPush({ table, userId, data: mergedData, toDbRow })
-
-      results[key] = { pull: pullResult, push: pushResult, mergedCount: mergedData.length, table }
+      // 4. 推送到远程（增量模式下只推送变化的数据）
+      if (dataToPush.length > 0) {
+        const pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
+        results[key] = { pull: pullResult, push: pushResult, mergedCount: dataToPush.length, table }
+      } else {
+        results[key] = { pull: pullResult, push: { success: true, count: 0 }, mergedCount: 0, table }
+      }
     } catch (err: any) {
       console.error(`[Sync] Error syncing table "${table}" (key: ${key}):`, err)
       results[key] = { pull: { success: false }, push: { success: false }, error: err, table }
+    }
+  }
+
+  if (useParallel) {
+    // 并行同步所有表
+    await Promise.all(Object.entries(stores).map(syncOne))
+  } else {
+    // 串行同步
+    for (const entry of Object.entries(stores)) {
+      await syncOne(entry)
     }
   }
 
