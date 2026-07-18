@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react'
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
