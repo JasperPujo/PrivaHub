@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
 
       const { fullSync, noteWallToDb, noteWallFromDb, taskToDb, taskFromDb, scheduleToDb, scheduleFromDb, planToDb, planFromDb, habitToDb, habitFromDb, noteToDb, noteFromDb, trackerCategoryToDb, trackerEntryToDb } = await import('@/lib/sync')
 
-      // 手动同步：全量同步（不带 since 参数）
+      // 手动同步：增量模式（带 since 参数）
       const results = await fullSync(user.id, {
         noteWalls: { table: 'note_walls', getData: () => noteStore.walls, setData: (data: any) => noteStore.setWalls(data), toDbRow: noteWallToDb, fromDbRow: noteWallFromDb },
         tasks: { table: 'tasks', getData: () => todoStore.tasks, setData: (data: any) => todoStore.setTasks(data), toDbRow: taskToDb, fromDbRow: taskFromDb },
@@ -119,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
         notes: { table: 'notes', getData: () => noteStore.notes, setData: (data: any) => noteStore.setNotes(data), toDbRow: noteToDb, fromDbRow: noteFromDb },
         trackerCategories: { table: 'tracker_categories', getData: () => trackerStore.categories, setData: (data: any) => trackerStore.setCategories(data), toDbRow: trackerCategoryToDb },
         trackerEntries: { table: 'tracker_entries', getData: () => trackerStore.entries, setData: (data: any) => trackerStore.setEntries(data), toDbRow: trackerEntryToDb },
-      })
+      }, { since: lastSyncTimeRef.current, parallel: true })
 
       // Collect failed table names and error details
       const failedTables: string[] = []
