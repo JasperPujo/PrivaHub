@@ -33,7 +33,7 @@ const Login: React.FC = () => {
     const savedBuildId = localStorage.getItem('privahub_build_id')
     const isNewBuild = __APP_BUILD_ID__ !== savedBuildId
 
-    if (isNewBuild && savedBuildId) {
+    if (isNewBuild || !savedBuildId) {
       // 版本更新/重装：清除密码和勾选状态，但保留邮箱
       localStorage.removeItem('privahub_saved_password')
       localStorage.removeItem('privahub_remember_password')
