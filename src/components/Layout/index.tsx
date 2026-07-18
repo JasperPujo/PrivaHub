@@ -148,22 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
       setSyncing(false)
     }
   }
-  // 自动定时同步（登录后每3分钟静默增量同步）
 
-
-
-  useEffect(() => {
-    if (user && isLoggedIn) {
-      // 首次登录后5秒执行一次静默同步
-      const timer = setTimeout(() => { silentSync() }, 5000)
-      // 之后每3分钟自动同步
-      autoSyncRef.current = setInterval(silentSync, 3 * 60 * 1000)
-      return () => {
-        clearTimeout(timer)
-        if (autoSyncRef.current) clearInterval(autoSyncRef.current)
-      }
-    }
-  }, [user, isLoggedIn, silentSync])
 
   return (
     <div className={`flex h-full w-full ${className || ''}`}>

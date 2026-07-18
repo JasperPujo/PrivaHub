@@ -36,7 +36,7 @@
     "date-fns": "^3.6.0",
     "echarts": "^5.5.0",
     "echarts-for-react": "^3.0.2",
-    "electron": "^30.0.3",
+    "electron": "^30.5.1",
     "electron-builder": "^24.13.3",
     "esbuild": "^0.28.1",
     "eslint": "^8.57.0",
