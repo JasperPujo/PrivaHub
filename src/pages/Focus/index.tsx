@@ -6,7 +6,8 @@ import { useTodoStore } from '@/store'
 import {
   Play, Pause, RotateCcw, Square, Check, Volume2, VolumeX,
   SkipForward, SkipBack, Settings, X, Headphones, Upload,
-  Repeat, Shuffle, ListMusic, BarChart2, Clock, ChevronRight, Zap, Target
+  Repeat, Shuffle, ListMusic, BarChart2, Clock, ChevronRight, Zap, Target,
+  Maximize2, Minimize2
 } from '@/utils/icons'
 import { generateUUID } from '@/lib/utils'
 
@@ -208,6 +209,40 @@ const FocusPage: React.FC = () => {
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // ---- 系统时间（计时页面显示） ----
+  const [systemTime, setSystemTime] = useState('')
+  useEffect(() => {
+    const update = () => {
+      const now = new Date()
+      const h = String(now.getHours()).padStart(2, '0')
+      const m = String(now.getMinutes()).padStart(2, '0')
+      const s = String(now.getSeconds()).padStart(2, '0')
+      setSystemTime(`${h}:${m}:${s}`)
+    }
+    update()
+    const timer = setInterval(update, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // ---- 全屏切换 ----
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+  const toggleFullscreen = useCallback(() => {
+    if (window.electronAPI?.toggleFullscreen) {
+      window.electronAPI.toggleFullscreen()
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen()
+    } else {
+      document.documentElement.requestFullscreen()
+    }
+  }, [])
 
   // 结算弹窗
   const [showSummary, setShowSummary] = useState(false)
@@ -873,20 +908,35 @@ const FocusPage: React.FC = () => {
             })}
           </motion.div>
 
-          {/* Stats link at bottom */}
-          <motion.button
+          {/* 底部按钮行 */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            onClick={() => navigate('/focus/stats')}
-            className="mt-12 flex items-center gap-2 text-sm transition-colors"
-            style={{ color: 'var(--text-tertiary)', position: 'relative', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+            className="mt-12 flex items-center gap-4"
+            style={{ position: 'relative', zIndex: 1 }}
           >
-            <BarChart2 size={16} />
-            <span>数据统计</span>
-          </motion.button>
+            <button
+              onClick={() => navigate('/focus/stats')}
+              className="flex items-center gap-2 text-sm transition-colors"
+              style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+            >
+              <BarChart2 size={16} />
+              <span>数据统计</span>
+            </button>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+              title={isFullscreen ? '退出全屏' : '全屏'}
+            >
+              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            </button>
+          </motion.div>
         </div>
       )}
 
@@ -940,6 +990,16 @@ const FocusPage: React.FC = () => {
                   <span>统计</span>
                 </button>
                 <button
+                  onClick={toggleFullscreen}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                  title={isFullscreen ? '退出全屏' : '全屏'}
+                >
+                  {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+                <button
                   onClick={() => setShowSettings(true)}
                   className="p-2 rounded-lg transition-colors"
                   style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -969,6 +1029,11 @@ const FocusPage: React.FC = () => {
                       style={{ color: isRest ? '#2dd4bf' : '#6B4C9A' }}
                     >
                       {formatTime(displayTime)}
+                    </div>
+
+                    {/* 系统时间 */}
+                    <div className="text-xs font-mono mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                      {systemTime}
                     </div>
 
                     {/* Pomodoro count */}

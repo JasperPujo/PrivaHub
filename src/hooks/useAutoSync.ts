@@ -24,7 +24,7 @@ export function useAutoSync() {
         plans: { table: 'plans', getData: () => usePlanStore.getState().plans, setData: (data: any) => usePlanStore.getState().setPlans(data), toDbRow: planToDb, fromDbRow: planFromDb },
         habits: { table: 'habits', getData: () => useHabitStore.getState().habits, setData: (data: any) => useHabitStore.getState().setHabits(data), toDbRow: habitToDb, fromDbRow: habitFromDb },
         notes: { table: 'notes', getData: () => useNoteStore.getState().notes, setData: (data: any) => useNoteStore.getState().setNotes(data), toDbRow: noteToDb, fromDbRow: noteFromDb },
-        trackerCategories: { table: 'tracker_categories', getData: () => useTrackerStore.getState().categories, setData: (data: any) => useTrackerStore.getState().setCategories(data), toDbRow: trackerCategoryToDb, fromDbRow: trackerEntryToDb },
+        trackerCategories: { table: 'tracker_categories', getData: () => useTrackerStore.getState().categories, setData: (data: any) => useTrackerStore.getState().setCategories(data), toDbRow: trackerCategoryToDb, fromDbRow: trackerCategoryToDb },
         trackerEntries: { table: 'tracker_entries', getData: () => useTrackerStore.getState().entries, setData: (data: any) => useTrackerStore.getState().setEntries(data), toDbRow: trackerEntryToDb, fromDbRow: trackerEntryToDb },
       }, { since, parallel: true })
 
