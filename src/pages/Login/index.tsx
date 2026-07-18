@@ -27,30 +27,23 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
 
-  // 读取上一次登录的邮箱和记住密码状态
+  // 只恢复上次登录的邮箱，密码和勾选状态不持久化
   useEffect(() => {
     const savedEmail = localStorage.getItem('privahub_last_email')
-    const savedRemember = localStorage.getItem('privahub_remember_password')
-    const savedAutoLogin = localStorage.getItem('privahub_auto_login')
-    // 检查版本是否变化，变化则清除密码（重装/更新后需重新输入密码）
-    const savedVersion = localStorage.getItem('privahub_installed_version')
-    const currentVersion = '1.2.0'
-    const versionChanged = savedVersion && savedVersion !== currentVersion
-    if (versionChanged) {
-      localStorage.removeItem('privahub_saved_password')
-      localStorage.setItem('privahub_installed_version', currentVersion)
-    }
     if (savedEmail) {
-      // 版本变化或未记住密码时，不填充密码
-      const savedPwd = (!versionChanged && savedRemember === 'true') ? (localStorage.getItem('privahub_saved_password') || '') : ''
       setLoginForm(prev => ({
         ...prev,
         username: savedEmail,
-        password: savedPwd,
-        rememberPassword: savedRemember === 'true',
-        autoLogin: versionChanged ? false : (savedAutoLogin === 'true'),
+        password: '',
+        rememberPassword: false,
+        autoLogin: false,
       }))
     }
+    // 清除可能残留的旧数据
+    localStorage.removeItem('privahub_saved_password')
+    localStorage.removeItem('privahub_remember_password')
+    localStorage.removeItem('privahub_auto_login')
+    localStorage.removeItem('privahub_installed_version')
   }, [])
 
   const validateLogin = () => {
@@ -134,17 +127,11 @@ const Login: React.FC = () => {
       updated_at: new Date().toISOString()
     })
 
-    // 记录当前安装版本
-    localStorage.setItem('privahub_installed_version', '1.2.0')
-    // 保存登录信息到 localStorage（不依赖 Supabase session）
+    // 只保存邮箱，供下次打开时自动填入
     localStorage.setItem('privahub_last_email', loginForm.username)
-    localStorage.setItem('privahub_remember_password', String(loginForm.rememberPassword))
-    localStorage.setItem('privahub_auto_login', String(loginForm.autoLogin))
-    if (loginForm.rememberPassword) {
-      localStorage.setItem('privahub_saved_password', loginForm.password)
-    } else {
-      localStorage.removeItem('privahub_saved_password')
-    }
+    localStorage.removeItem('privahub_saved_password')
+    localStorage.removeItem('privahub_remember_password')
+    localStorage.removeItem('privahub_auto_login')
 
     if (loginForm.rememberPassword || loginForm.autoLogin) {
       updateSettings({ rememberPassword: loginForm.rememberPassword, autoLogin: loginForm.autoLogin })
@@ -320,14 +307,7 @@ const Login: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={loginForm.rememberPassword}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setLoginForm(prev => ({ ...prev, rememberPassword: checked, autoLogin: checked ? prev.autoLogin : false }))
-                      if (!checked) {
-                        localStorage.removeItem('privahub_saved_password')
-                        setLoginForm(prev => ({ ...prev, password: '' }))
-                      }
-                    }}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, rememberPassword: e.target.checked, autoLogin: e.target.checked ? prev.autoLogin : false }))}
                     className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
                   />
                   记住密码
