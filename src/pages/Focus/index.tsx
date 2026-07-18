@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store'
@@ -191,7 +191,7 @@ const modeEntries = [
 const FocusPage: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAppStore()
-  const { tasks, updateTask, addTask } = useTodoStore()
+  const { tasks } = useTodoStore()
   const addNotification = useAppStore((state) => state.addNotification)
 
   // ---- Page state: 'home' or 'timer' ----
@@ -209,6 +209,23 @@ const FocusPage: React.FC = () => {
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // ---- 主题选择面板 ----
+  const [showTopicPanel, setShowTopicPanel] = useState(false)
+  const [customTopicInput, setCustomTopicInput] = useState('')
+  const topicPanelRef = useRef<HTMLDivElement>(null)
+
+  // 点击外部关闭主题选择面板
+  useEffect(() => {
+    if (!showTopicPanel) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (topicPanelRef.current && !topicPanelRef.current.contains(e.target as Node)) {
+        setShowTopicPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTopicPanel])
 
   // ---- 系统时间（计时页面显示） ----
   const [systemTime, setSystemTime] = useState('')
@@ -462,18 +479,7 @@ const FocusPage: React.FC = () => {
   const linkedTask = tasks.find((t) => t.id === linkedTaskId)
   const incompleteTasks = tasks.filter((t) => !t.is_completed && !t.deleted_at).slice(0, 10)
 
-  // 任务勾选
-  const toggleTaskComplete = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId)
-    if (!task) return
-    const newCompleted = !task.is_completed
-    updateTask(taskId, { is_completed: newCompleted })
-    if (newCompleted) {
-      setCompletedTaskIds((prev) => [...prev, taskId])
-    } else {
-      setCompletedTaskIds((prev) => prev.filter((id) => id !== taskId))
-    }
-  }
+
 
   // ---- 白噪音控制 ----
   const toggleSound = () => {
@@ -1048,31 +1054,186 @@ const FocusPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Theme / task line */}
-                    <div className="mb-8">
+                    {/* Theme / task line with selection panel */}
+                    <div className="mb-8" style={{ position: 'relative' }} ref={topicPanelRef}>
                       <button
                         onClick={() => {
-                          const newTheme = prompt('请输入专注主题：', focusTheme)
-                          if (newTheme) setFocusTheme(newTheme)
+                          if (isRunning) return
+                          setShowTopicPanel(!showTopicPanel)
                         }}
                         className="text-base transition-colors"
-                        style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        style={{
+                          color: linkedTaskId || focusTheme !== '无主题专注' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: isRunning ? 'default' : 'pointer',
+                          padding: '4px 12px',
+                          borderRadius: 8,
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isRunning) {
+                            e.currentTarget.style.background = 'var(--bg-secondary)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                        }}
                       >
-                        {linkedTask ? `📋 ${linkedTask.title}` : focusTheme}
+                        {linkedTask ? linkedTask.title : focusTheme}
                       </button>
-                      {linkedTask && (
-                        <button
-                          onClick={() => setLinkedTaskId(null)}
-                          className="ml-2 text-xs transition-colors"
-                          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                        >
-                          解除关联
-                        </button>
-                      )}
+
+                      {/* 主题选择弹出面板 */}
+                      <AnimatePresence>
+                        {showTopicPanel && !isRunning && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 8 }}
+                            transition={{ duration: 0.15 }}
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              marginTop: 8,
+                              width: 280,
+                              maxHeight: 320,
+                              background: '#fff',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: 12,
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                              zIndex: 20,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              overflow: 'hidden',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* 自定义主题输入 */}
+                            <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--border-color)' }}>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                  type="text"
+                                  placeholder="输入自定义主题..."
+                                  value={customTopicInput}
+                                  onChange={(e) => setCustomTopicInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && customTopicInput.trim()) {
+                                      setFocusTheme(customTopicInput.trim())
+                                      setLinkedTaskId(null)
+                                      setCustomTopicInput('')
+                                      setShowTopicPanel(false)
+                                    }
+                                  }}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 10px',
+                                    fontSize: 13,
+                                    borderRadius: 6,
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (customTopicInput.trim()) {
+                                      setFocusTheme(customTopicInput.trim())
+                                      setLinkedTaskId(null)
+                                      setCustomTopicInput('')
+                                      setShowTopicPanel(false)
+                                    }
+                                  }}
+                                  disabled={!customTopicInput.trim()}
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: 12,
+                                    borderRadius: 6,
+                                    border: 'none',
+                                    background: customTopicInput.trim() ? '#6B4C9A' : 'var(--border-color)',
+                                    color: customTopicInput.trim() ? '#fff' : 'var(--text-tertiary)',
+                                    cursor: customTopicInput.trim() ? 'pointer' : 'default',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                >
+                                  确认
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* 关联任务选择列表 */}
+                            <div style={{ padding: '8px 0', overflowY: 'auto', flex: 1 }}>
+                              <div style={{ padding: '4px 12px 6px', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                                选择关联任务
+                              </div>
+                              {incompleteTasks.length === 0 && (
+                                <div style={{ padding: '16px 12px', fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                                  暂无待办任务
+                                </div>
+                              )}
+                              {incompleteTasks.map((task) => (
+                                <div
+                                  key={task.id}
+                                  onClick={() => {
+                                    setLinkedTaskId(task.id)
+                                    setFocusTheme(task.title)
+                                    setCustomTopicInput('')
+                                    setShowTopicPanel(false)
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    padding: '8px 12px',
+                                    cursor: 'pointer',
+                                    borderLeft: linkedTaskId === task.id ? '3px solid #6B4C9A' : '3px solid transparent',
+                                    background: linkedTaskId === task.id ? 'rgba(107,76,154,0.06)' : 'transparent',
+                                    transition: 'background 0.15s ease',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (linkedTaskId !== task.id) {
+                                      e.currentTarget.style.background = 'var(--bg-secondary)'
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (linkedTaskId !== task.id) {
+                                      e.currentTarget.style.background = 'transparent'
+                                    }
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: '50%',
+                                      flexShrink: 0,
+                                      background: task.priority === 'high' ? '#ef4444' : task.priority === 'low' ? '#3b82f6' : '#f59e0b',
+                                    }}
+                                  />
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      fontSize: 13,
+                                      color: 'var(--text-primary)',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {task.title}
+                                  </span>
+                                  {linkedTaskId === task.id && (
+                                    <span style={{ color: '#6B4C9A', fontSize: 14 }}>✓</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Progress bar */}
@@ -1177,7 +1338,7 @@ const FocusPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Right: Task panel */}
+              {/* Right: Linked task info panel */}
               <div className="flex-1 flex flex-col gap-4 min-w-[280px] max-w-[360px]">
                 <div
                   className="flex-1 flex flex-col min-h-0 p-4"
@@ -1188,70 +1349,101 @@ const FocusPage: React.FC = () => {
                   }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>关联任务</h3>
-                    <button
+                    <h3
+                      className="text-sm font-semibold"
+                      style={{
+                        color: linkedTaskId ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                        cursor: linkedTaskId && !isRunning ? 'pointer' : 'default',
+                      }}
                       onClick={() => {
-                        const title = prompt('新建任务标题：')
-                        if (title) {
-                          addTask({
-                            id: generateUUID(),
-                            user_id: user?.id || 'current-user',
-                            title,
-                            description: '',
-                            priority: 'medium',
-                            category: '',
-                            due_date: null,
-                            is_completed: false,
-                            subtasks: [],
-                            attachments: [],
-                            deleted_at: null,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
-                          })
-                          addNotification({ message: '任务已创建', type: 'success' })
+                        if (linkedTaskId && !isRunning) {
+                          setShowTopicPanel(true)
                         }
                       }}
-                      className="text-xs hover:underline"
-                      style={{ color: '#6B4C9A', background: 'none', border: 'none', cursor: 'pointer' }}
                     >
-                      + 新建任务
-                    </button>
+                      关联任务
+                    </h3>
                   </div>
 
-                  <div className="overflow-y-auto flex-1 space-y-1.5 pr-1">
-                    {incompleteTasks.map((task) => (
+                  <div className="flex-1 flex items-start justify-center">
+                    {linkedTask ? (
                       <div
-                        key={task.id}
-                        className="flex items-center gap-2 p-2 rounded-md transition-colors"
                         style={{
-                          background: linkedTaskId === task.id ? 'rgba(107,76,154,0.08)' : 'transparent',
+                          width: '100%',
+                          padding: '12px',
+                          borderRadius: 10,
+                          background: 'rgba(107,76,154,0.06)',
+                          borderLeft: '3px solid #6B4C9A',
+                          cursor: !isRunning ? 'pointer' : 'default',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onClick={() => {
+                          if (!isRunning) setShowTopicPanel(true)
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isRunning) e.currentTarget.style.background = 'rgba(107,76,154,0.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(107,76,154,0.06)'
                         }}
                       >
-                        <button
-                          onClick={() => toggleTaskComplete(task.id)}
-                          className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
-                          style={{
-                            background: task.is_completed ? '#6B4C9A' : 'transparent',
-                            borderColor: task.is_completed ? '#6B4C9A' : 'var(--border-color)',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {task.is_completed && <Check size={10} style={{ color: '#fff' }} />}
-                        </button>
-                        <span
-                          className="text-sm flex-1 truncate cursor-pointer"
-                          style={{
-                            color: linkedTaskId === task.id ? '#6B4C9A' : 'var(--text-primary)',
-                            fontWeight: linkedTaskId === task.id ? 500 : 400,
-                          }}
-                          onClick={() => setLinkedTaskId(task.id === linkedTaskId ? null : task.id)}
-                        >
-                          {task.title}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                              background: linkedTask.priority === 'high' ? '#ef4444' : linkedTask.priority === 'low' ? '#3b82f6' : '#f59e0b',
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 500,
+                              color: 'var(--text-primary)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {linkedTask.title}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginLeft: 16 }}>
+                          优先级：{linkedTask.priority === 'high' ? '高' : linkedTask.priority === 'low' ? '低' : '中'}
+                          {linkedTask.due_date && (
+                            <span style={{ marginLeft: 8 }}>
+                              截止：{new Date(linkedTask.due_date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                    {incompleteTasks.length === 0 && (
-                      <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>暂无待办任务</p>
+                    ) : (
+                      <div
+                        className="flex flex-col items-center justify-center"
+                        style={{
+                          padding: '32px 16px',
+                          color: 'var(--text-tertiary)',
+                        }}
+                      >
+                        <span style={{ fontSize: 12 }}>暂无关联任务</span>
+                        {!isRunning && (
+                          <button
+                            onClick={() => setShowTopicPanel(true)}
+                            style={{
+                              marginTop: 8,
+                              fontSize: 12,
+                              color: '#6B4C9A',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            点击选择
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
