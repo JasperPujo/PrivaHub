@@ -53,210 +53,79 @@ const formatTime = (seconds: number) => {
 }
 
 /* ================================================================
-   Flip Clock Styles (injected once via DOM)
+   Flip Clock Inline Styles (light theme)
    ================================================================ */
 
-const flipClockStyleId = 'flip-clock-styles'
-if (typeof document !== 'undefined' && !document.getElementById(flipClockStyleId)) {
-  const styleEl = document.createElement('style')
-  styleEl.id = flipClockStyleId
-  styleEl.textContent = `
-    /* === Flip Clock Container === */
-    .flip-clock-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      user-select: none;
-    }
-    .flip-clock-wrapper .flip-clock-separator {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      padding: 0 2px;
-    }
-    .flip-clock-wrapper .flip-clock-separator span {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: rgba(107, 76, 154, 0.7);
-      box-shadow: 0 0 10px rgba(107, 76, 154, 0.5);
-    }
+const flipCardStyles: React.CSSProperties = {
+  position: 'relative',
+  width: 80,
+  height: 104,
+  perspective: 400,
+  borderRadius: 10,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
+  background: '#f5f5f7',
+}
 
-    /* === Flip Card === */
-    .flip-card {
-      position: relative;
-      width: 100px;
-      height: 130px;
-      perspective: 400px;
-      border-radius: 12px;
-      box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.4),
-        0 0 30px rgba(107, 76, 154, 0.1);
-    }
-    .flip-card .card-face {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      border-radius: 12px;
-      background: linear-gradient(145deg, #2a2040, #1a1230);
-    }
-    .flip-card .card-face::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 50%;
-      height: 2px;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 5;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    }
+const cardFaceBase: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  overflow: 'hidden',
+  borderRadius: 10,
+  background: '#f5f5f7',
+}
 
-    /* Upper half clips bottom, lower half clips top */
-    .flip-card .card-upper {
-      clip-path: inset(0 0 50% 0);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      background: linear-gradient(180deg, #2e2448 0%, #251e3c 100%);
-      border-radius: 12px 12px 0 0;
-      border-bottom: 1px solid rgba(0,0,0,0.5);
-    }
-    .flip-card .card-upper .digit-text {
-      transform: translateY(50%);
-    }
-    .flip-card .card-lower {
-      clip-path: inset(50% 0 0 0);
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      background: linear-gradient(180deg, #1e1835 0%, #1a1230 100%);
-      border-radius: 0 0 12px 12px;
-    }
-    .flip-card .card-lower .digit-text {
-      transform: translateY(-50%);
-    }
+const cardUpperStyle: React.CSSProperties = {
+  ...cardFaceBase,
+  clipPath: 'inset(0 0 50% 0)',
+  display: 'flex',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  borderBottom: '1px solid rgba(0,0,0,0.08)',
+}
 
-    .flip-card .digit-text {
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      font-size: 72px;
-      font-weight: 700;
-      line-height: 1;
-      color: #e8e0f0;
-      text-shadow: 0 2px 8px rgba(107, 76, 154, 0.3);
-    }
+const cardLowerStyle: React.CSSProperties = {
+  ...cardFaceBase,
+  clipPath: 'inset(50% 0 0 0)',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+}
 
-    /* === Flip Animation === */
-    .flip-card .flip-upper {
-      position: absolute;
-      inset: 0;
-      clip-path: inset(0 0 50% 0);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      background: linear-gradient(180deg, #2e2448 0%, #251e3c 100%);
-      border-radius: 12px 12px 0 0;
-      border-bottom: 1px solid rgba(0,0,0,0.5);
-      z-index: 10;
-      transform-origin: bottom center;
-    }
-    .flip-card .flip-upper .digit-text {
-      transform: translateY(50%);
-    }
-    .flip-card .flip-upper.flipping {
-      animation: flipUpper 0.6s ease-in forwards;
-    }
-    @keyframes flipUpper {
-      0%   { transform: rotateX(0deg); }
-      100% { transform: rotateX(-90deg); }
-    }
+const digitTextStyle: React.CSSProperties = {
+  fontFamily: "'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+  fontSize: 52,
+  fontWeight: 700,
+  lineHeight: 1,
+  color: '#333',
+  userSelect: 'none',
+}
 
-    .flip-card .flip-lower {
-      position: absolute;
-      inset: 0;
-      clip-path: inset(50% 0 0 0);
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      background: linear-gradient(180deg, #1e1835 0%, #1a1230 100%);
-      border-radius: 0 0 12px 12px;
-      z-index: 10;
-      transform-origin: top center;
-      transform: rotateX(90deg);
-    }
-    .flip-card .flip-lower .digit-text {
-      transform: translateY(-50%);
-    }
-    .flip-card .flip-lower.flipping {
-      animation: flipLower 0.6s 0.3s ease-out forwards;
-    }
-    @keyframes flipLower {
-      0%   { transform: rotateX(90deg); }
-      100% { transform: rotateX(0deg); }
-    }
+const flipUpperStyle: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  clipPath: 'inset(0 0 50% 0)',
+  display: 'flex',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  background: '#f5f5f7',
+  borderRadius: '10px 10px 0 0',
+  borderBottom: '1px solid rgba(0,0,0,0.08)',
+  zIndex: 10,
+  transformOrigin: 'bottom center',
+}
 
-    /* === Dark theme page overrides === */
-    .focus-dark-bg {
-      background: linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 40%, #0d0618 100%);
-      color: #e8e0f0;
-    }
-
-    /* === Glassmorphism Cards === */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.06);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-    .glass-card:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(107, 76, 154, 0.4);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(107, 76, 154, 0.2);
-    }
-
-    /* === Sound Panel === */
-    .sound-panel {
-      position: fixed;
-      right: 24px;
-      bottom: 24px;
-      z-index: 40;
-    }
-    .sound-panel-toggle {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: rgba(107, 76, 154, 0.8);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      color: #e8e0f0;
-    }
-    .sound-panel-toggle:hover {
-      background: rgba(107, 76, 154, 1);
-      box-shadow: 0 4px 20px rgba(107, 76, 154, 0.5);
-    }
-    .sound-panel-content {
-      position: absolute;
-      bottom: 64px;
-      right: 0;
-      width: 320px;
-      background: rgba(20, 14, 35, 0.95);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-  `
-  document.head.appendChild(styleEl)
+const flipLowerStyle: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  clipPath: 'inset(50% 0 0 0)',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  background: '#f5f5f7',
+  borderRadius: '0 0 10px 10px',
+  zIndex: 10,
+  transformOrigin: 'top center',
+  transform: 'rotateX(90deg)',
 }
 
 /* ================================================================
@@ -267,26 +136,44 @@ const FlipDigit: React.FC<{ digit: string; prevDigit: string }> = ({ digit, prev
   const isFlipping = digit !== prevDigit
 
   return (
-    <div className="flip-card">
+    <div style={flipCardStyles}>
       {/* Static lower: shows PREVIOUS digit (revealed after flip) */}
-      <div className="card-face card-lower">
-        <span className="digit-text">{prevDigit}</span>
+      <div style={cardLowerStyle}>
+        <span style={{ ...digitTextStyle, transform: 'translateY(-50%)' }}>{prevDigit}</span>
       </div>
 
       {/* Static upper: shows CURRENT digit (always visible on top) */}
-      <div className="card-face card-upper">
-        <span className="digit-text">{digit}</span>
+      <div style={cardUpperStyle}>
+        <span style={{ ...digitTextStyle, transform: 'translateY(50%)' }}>{digit}</span>
       </div>
 
       {/* Animated upper flap: starts showing PREVIOUS, flips down to reveal CURRENT */}
-      <div className={`flip-upper${isFlipping ? ' flipping' : ''}`}>
-        <span className="digit-text">{prevDigit}</span>
+      <div style={{
+        ...flipUpperStyle,
+        animation: isFlipping ? 'flipClockFlipUpper 0.6s ease-in forwards' : 'none',
+      }}>
+        <span style={{ ...digitTextStyle, transform: 'translateY(50%)' }}>{prevDigit}</span>
       </div>
 
       {/* Animated lower flap: starts hidden, flips down showing CURRENT */}
-      <div className={`flip-lower${isFlipping ? ' flipping' : ''}`}>
-        <span className="digit-text">{digit}</span>
+      <div style={{
+        ...flipLowerStyle,
+        animation: isFlipping ? 'flipClockFlipLower 0.6s 0.3s ease-out forwards' : 'none',
+      }}>
+        <span style={{ ...digitTextStyle, transform: 'translateY(-50%)' }}>{digit}</span>
       </div>
+
+      {/* Inline keyframes for flip animations */}
+      <style>{`
+        @keyframes flipClockFlipUpper {
+          0%   { transform: rotateX(0deg); }
+          100% { transform: rotateX(-90deg); }
+        }
+        @keyframes flipClockFlipLower {
+          0%   { transform: rotateX(90deg); }
+          100% { transform: rotateX(0deg); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -326,28 +213,58 @@ const FlipClock: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="flip-clock-wrapper">
+      <div className="flex items-center" style={{ gap: 8 }}>
         <FlipDigit digit={currArr[0]} prevDigit={prevArr[0]} />
         <FlipDigit digit={currArr[1]} prevDigit={prevArr[1]} />
 
-        <div className="flip-clock-separator">
-          <span />
-          <span />
+        {/* Separator */}
+        <div className="flex flex-col" style={{ gap: 14, padding: '0 2px' }}>
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#6B4C9A',
+            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
+            display: 'block',
+          }} />
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#6B4C9A',
+            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
+            display: 'block',
+          }} />
         </div>
 
         <FlipDigit digit={currArr[2]} prevDigit={prevArr[2]} />
         <FlipDigit digit={currArr[3]} prevDigit={prevArr[3]} />
 
-        <div className="flip-clock-separator">
-          <span />
-          <span />
+        {/* Separator */}
+        <div className="flex flex-col" style={{ gap: 14, padding: '0 2px' }}>
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#6B4C9A',
+            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
+            display: 'block',
+          }} />
+          <span style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: '#6B4C9A',
+            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
+            display: 'block',
+          }} />
         </div>
 
         <FlipDigit digit={currArr[4]} prevDigit={prevArr[4]} />
         <FlipDigit digit={currArr[5]} prevDigit={prevArr[5]} />
       </div>
 
-      <div className="mt-6 text-lg tracking-widest" style={{ color: 'rgba(232, 224, 240, 0.5)' }}>
+      <div className="mt-6 text-lg tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
         {dateStr} {dayStr}
       </div>
     </div>
@@ -364,24 +281,24 @@ const modeEntries = [
     title: '正计时',
     desc: '自由计时，记录你的专注时长',
     icon: Zap,
-    gradient: 'linear-gradient(135deg, rgba(107,76,154,0.3) 0%, rgba(107,76,154,0.05) 100%)',
-    iconBg: 'rgba(107, 76, 154, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(107,76,154,0.15) 0%, rgba(107,76,154,0.03) 100%)',
+    iconBg: 'rgba(107, 76, 154, 0.15)',
   },
   {
     key: 'countDown' as const,
     title: '倒计时',
     desc: '设定目标时间，高效完成每一段专注',
     icon: Clock,
-    gradient: 'linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(59,130,246,0.05) 100%)',
-    iconBg: 'rgba(59, 130, 246, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.03) 100%)',
+    iconBg: 'rgba(59, 130, 246, 0.15)',
   },
   {
     key: 'pomodoro' as const,
     title: '番茄钟',
     desc: '专注与休息交替，保持最佳状态',
     icon: Target,
-    gradient: 'linear-gradient(135deg, rgba(239,68,68,0.3) 0%, rgba(239,68,68,0.05) 100%)',
-    iconBg: 'rgba(239, 68, 68, 0.2)',
+    gradient: 'linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.03) 100%)',
+    iconBg: 'rgba(239, 68, 68, 0.15)',
   },
 ]
 
@@ -804,12 +721,25 @@ const FocusPage: React.FC = () => {
 
   // ---- Render: White Noise Floating Panel (shared between home & timer) ----
   const renderSoundPanel = () => (
-    <div className="sound-panel">
+    <div style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 40 }}>
       {/* Toggle Button */}
       <button
-        className="sound-panel-toggle"
         onClick={() => setShowSoundPanel(!showSoundPanel)}
         title="白噪音"
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: '#6B4C9A',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          color: '#fff',
+          boxShadow: '0 2px 12px rgba(107,76,154,0.3)',
+        }}
       >
         <Headphones size={22} />
         {soundPlaying && (
@@ -822,7 +752,7 @@ const FocusPage: React.FC = () => {
               height: 10,
               borderRadius: '50%',
               background: '#4ade80',
-              border: '2px solid rgba(20,14,35,0.9)',
+              border: '2px solid #fff',
             }}
           />
         )}
@@ -836,16 +766,26 @@ const FocusPage: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="sound-panel-content"
+            style={{
+              position: 'absolute',
+              bottom: 64,
+              right: 0,
+              width: 320,
+              background: '#fff',
+              border: '1px solid var(--border-color)',
+              borderRadius: 16,
+              padding: 20,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            }}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Headphones size={16} style={{ color: '#6B4C9A' }} />
-                <span className="text-sm font-semibold" style={{ color: '#e8e0f0' }}>白噪音</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>白噪音</span>
               </div>
               <button
                 onClick={() => setShowSoundPanel(false)}
-                style={{ color: 'rgba(232,224,240,0.5)' }}
+                style={{ color: 'var(--text-tertiary)' }}
                 className="hover:opacity-80 transition-opacity"
               >
                 <X size={16} />
@@ -859,13 +799,13 @@ const FocusPage: React.FC = () => {
                 onChange={(e) => handleSoundSelect(Number(e.target.value))}
                 className="w-full px-3 py-2 text-sm rounded-lg border"
                 style={{
-                  borderColor: 'rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: '#e8e0f0',
+                  borderColor: 'var(--border-color)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                 }}
               >
                 {soundList.map((sound, idx) => (
-                  <option key={sound.id} value={idx} style={{ background: '#1a1230', color: '#e8e0f0' }}>
+                  <option key={sound.id} value={idx} style={{ background: '#fff', color: 'var(--text-primary)' }}>
                     {sound.name}
                   </option>
                 ))}
@@ -876,7 +816,7 @@ const FocusPage: React.FC = () => {
             <div className="flex items-center justify-center gap-4 mb-3">
               <button
                 onClick={prevSound}
-                style={{ color: 'rgba(232,224,240,0.4)' }}
+                style={{ color: 'var(--text-tertiary)' }}
                 className="hover:opacity-80 transition-opacity"
               >
                 <SkipBack size={16} />
@@ -887,13 +827,15 @@ const FocusPage: React.FC = () => {
                 style={{
                   background: '#6B4C9A',
                   color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
                 }}
               >
                 {soundPlaying ? <Pause size={18} /> : <Play size={18} />}
               </button>
               <button
                 onClick={nextSound}
-                style={{ color: 'rgba(232,224,240,0.4)' }}
+                style={{ color: 'var(--text-tertiary)' }}
                 className="hover:opacity-80 transition-opacity"
               >
                 <SkipForward size={16} />
@@ -913,8 +855,10 @@ const FocusPage: React.FC = () => {
                   title={m.label}
                   className="flex-1 py-1.5 rounded-md text-xs flex items-center justify-center gap-1 transition-colors"
                   style={{
-                    background: playMode === m.key ? 'rgba(107,76,154,0.2)' : 'transparent',
-                    color: playMode === m.key ? '#6B4C9A' : 'rgba(232,224,240,0.35)',
+                    background: playMode === m.key ? 'rgba(107,76,154,0.12)' : 'transparent',
+                    color: playMode === m.key ? '#6B4C9A' : 'var(--text-tertiary)',
+                    border: 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   <m.icon size={14} />
@@ -925,9 +869,9 @@ const FocusPage: React.FC = () => {
 
             {/* Volume */}
             <div className="flex items-center gap-3">
-              <VolumeX size={14} style={{ color: 'rgba(232,224,240,0.35)', flexShrink: 0 }} />
+              <VolumeX size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
               <div className="flex-1 relative h-5 flex items-center">
-                <div className="absolute left-0 right-0 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <div className="absolute left-0 right-0 h-1.5 rounded-full" style={{ background: 'var(--border-color)' }} />
                 <div
                   className="absolute left-0 h-1.5 rounded-full"
                   style={{ width: `${soundVolume}%`, background: '#6B4C9A' }}
@@ -951,20 +895,20 @@ const FocusPage: React.FC = () => {
                   style={{
                     left: `calc(${soundVolume}% - 7px)`,
                     background: '#6B4C9A',
-                    borderColor: 'rgba(20,14,35,0.9)',
+                    borderColor: '#fff',
                   }}
                 />
               </div>
-              <Volume2 size={14} style={{ color: 'rgba(232,224,240,0.35)', flexShrink: 0 }} />
-              <span className="text-xs w-8 text-right" style={{ color: 'rgba(232,224,240,0.6)' }}>{soundVolume}%</span>
+              <Volume2 size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+              <span className="text-xs w-8 text-right" style={{ color: 'var(--text-secondary)' }}>{soundVolume}%</span>
             </div>
 
             {/* Upload custom sound */}
-            <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border-color)' }}>
               <button
                 onClick={() => setShowSoundUpload(true)}
                 className="flex items-center gap-1.5 text-xs hover:underline"
-                style={{ color: '#6B4C9A' }}
+                style={{ color: '#6B4C9A', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 <Upload size={12} />
                 上传自定义音效
@@ -981,36 +925,10 @@ const FocusPage: React.FC = () => {
      ================================================================ */
 
   return (
-    <div className={`page-container h-full overflow-y-auto ${page === 'home' ? 'focus-dark-bg' : ''}`}>
+    <div className="page-container h-full overflow-y-auto">
       {/* ==================== HOME VIEW ==================== */}
       {page === 'home' && (
         <div className="h-full flex flex-col items-center justify-center relative">
-          {/* Background decorative glowing orbs */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '10%',
-              left: '15%',
-              width: 300,
-              height: 300,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(107,76,154,0.15) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '15%',
-              right: '10%',
-              width: 400,
-              height: 400,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(107,76,154,0.1) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-
           {/* Flip Clock */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1021,7 +939,7 @@ const FocusPage: React.FC = () => {
             <FlipClock />
           </motion.div>
 
-          {/* Mode Entry Cards (Glassmorphism) */}
+          {/* Mode Entry Cards */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1034,22 +952,38 @@ const FocusPage: React.FC = () => {
               return (
                 <div
                   key={entry.key}
-                  className="glass-card flex flex-col items-center p-8 w-52"
+                  className="flex flex-col items-center p-8 w-52"
                   onClick={() => enterMode(entry.key)}
+                  style={{
+                    background: entry.gradient,
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 20,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)'
+                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(107,76,154,0.12)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'
+                  }}
                 >
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
                     style={{ background: entry.iconBg }}
                   >
-                    <IconComp size={26} style={{ color: '#e8e0f0' }} />
+                    <IconComp size={26} style={{ color: 'var(--text-primary)' }} />
                   </div>
-                  <h3 className="text-base font-semibold mb-2" style={{ color: '#e8e0f0' }}>
+                  <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                     {entry.title}
                   </h3>
-                  <p className="text-xs text-center leading-relaxed" style={{ color: 'rgba(232,224,240,0.5)' }}>
+                  <p className="text-xs text-center leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
                     {entry.desc}
                   </p>
-                  <div className="mt-4 flex items-center gap-1 text-xs" style={{ color: 'rgba(107,76,154,0.8)' }}>
+                  <div className="mt-4 flex items-center gap-1 text-xs" style={{ color: '#6B4C9A' }}>
                     <span>开始</span>
                     <ChevronRight size={14} />
                   </div>
@@ -1065,9 +999,9 @@ const FocusPage: React.FC = () => {
             transition={{ delay: 0.5 }}
             onClick={() => navigate('/focus/stats')}
             className="mt-12 flex items-center gap-2 text-sm transition-colors"
-            style={{ color: 'rgba(232,224,240,0.4)', position: 'relative', zIndex: 1 }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.7)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.4)')}
+            style={{ color: 'var(--text-tertiary)', position: 'relative', zIndex: 1, background: 'none', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
           >
             <BarChart2 size={16} />
             <span>数据统计</span>
@@ -1077,22 +1011,22 @@ const FocusPage: React.FC = () => {
 
       {/* ==================== TIMER VIEW ==================== */}
       {page === 'timer' && (
-        <div className="h-full flex flex-col focus-dark-bg">
+        <div className="h-full flex flex-col">
           <div className="max-w-5xl mx-auto w-full flex-1 flex flex-col min-h-0 px-4">
             {/* Top bar */}
             <div className="flex items-center justify-between py-4">
               <button
                 onClick={goHome}
                 className="flex items-center gap-1.5 text-sm transition-colors"
-                style={{ color: 'rgba(232,224,240,0.5)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.8)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.5)')}
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
               >
-                <span style={{fontSize: '16px'}}>←</span>
+                <span style={{fontSize: '16px'}}>&#8592;</span>
                 <span>返回</span>
               </button>
 
-              <div className="flex items-center gap-1 p-1" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 8 }}>
+              <div className="flex items-center gap-1 p-1" style={{ background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
                 {([
                   { key: 'countUp' as const, label: '正计时' },
                   { key: 'countDown' as const, label: '倒计时' },
@@ -1104,8 +1038,10 @@ const FocusPage: React.FC = () => {
                     className="px-4 py-1.5 text-sm font-medium rounded-md transition-all"
                     style={{
                       background: mode === m.key ? '#6B4C9A' : 'transparent',
-                      color: mode === m.key ? '#fff' : 'rgba(232,224,240,0.5)',
+                      color: mode === m.key ? '#fff' : 'var(--text-tertiary)',
                       boxShadow: mode === m.key ? '0 2px 8px rgba(107,76,154,0.3)' : 'none',
+                      border: 'none',
+                      cursor: 'pointer',
                     }}
                   >
                     {m.label}
@@ -1117,7 +1053,7 @@ const FocusPage: React.FC = () => {
                 <button
                   onClick={() => navigate('/focus/stats')}
                   className="text-sm flex items-center gap-1 transition-colors"
-                  style={{ color: '#6B4C9A' }}
+                  style={{ color: '#6B4C9A', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   <BarChart2 size={16} />
                   <span>统计</span>
@@ -1125,7 +1061,7 @@ const FocusPage: React.FC = () => {
                 <button
                   onClick={() => setShowSettings(true)}
                   className="p-2 rounded-lg transition-colors"
-                  style={{ color: 'rgba(232,224,240,0.5)' }}
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                   title="设置"
                 >
                   <Settings size={18} />
@@ -1156,7 +1092,7 @@ const FocusPage: React.FC = () => {
 
                     {/* Pomodoro count */}
                     {mode === 'pomodoro' && !isRest && (
-                      <div className="text-sm mb-3" style={{ color: 'rgba(232,224,240,0.5)' }}>
+                      <div className="text-sm mb-3" style={{ color: 'var(--text-tertiary)' }}>
                         第 {pomodoroCount + 1} 个番茄 · 已完成 {pomodoroCount} 个
                       </div>
                     )}
@@ -1174,9 +1110,9 @@ const FocusPage: React.FC = () => {
                           if (newTheme) setFocusTheme(newTheme)
                         }}
                         className="text-base transition-colors"
-                        style={{ color: 'rgba(232,224,240,0.6)' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#e8e0f0')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.6)')}
+                        style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
                       >
                         {linkedTask ? `📋 ${linkedTask.title}` : focusTheme}
                       </button>
@@ -1184,9 +1120,9 @@ const FocusPage: React.FC = () => {
                         <button
                           onClick={() => setLinkedTaskId(null)}
                           className="ml-2 text-xs transition-colors"
-                          style={{ color: 'rgba(232,224,240,0.35)' }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.6)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.35)')}
+                          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                         >
                           解除关联
                         </button>
@@ -1197,7 +1133,7 @@ const FocusPage: React.FC = () => {
                     {(mode === 'countDown' || mode === 'pomodoro') && targetDuration > 0 && (
                       <div
                         className="w-full max-w-md mx-auto h-2 rounded-full mb-8 overflow-hidden"
-                        style={{ background: 'rgba(255,255,255,0.06)' }}
+                        style={{ background: 'var(--border-color)' }}
                       >
                         <motion.div
                           className="h-full rounded-full"
@@ -1217,8 +1153,10 @@ const FocusPage: React.FC = () => {
                             onClick={() => setTargetDuration(min * 60)}
                             className="px-3 py-1.5 text-xs rounded-md transition-colors"
                             style={{
-                              background: targetDuration === min * 60 ? '#6B4C9A' : 'rgba(255,255,255,0.06)',
-                              color: targetDuration === min * 60 ? '#fff' : 'rgba(232,224,240,0.5)',
+                              background: targetDuration === min * 60 ? '#6B4C9A' : 'var(--bg-secondary)',
+                              color: targetDuration === min * 60 ? '#fff' : 'var(--text-tertiary)',
+                              border: '1px solid var(--border-color)',
+                              cursor: 'pointer',
                             }}
                           >
                             {min} 分钟
@@ -1230,7 +1168,7 @@ const FocusPage: React.FC = () => {
                             if (input) setTargetDuration(parseInt(input) * 60)
                           }}
                           className="px-3 py-1.5 text-xs rounded-md transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(232,224,240,0.5)' }}
+                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-tertiary)', border: '1px solid var(--border-color)', cursor: 'pointer' }}
                         >
                           自定义
                         </button>
@@ -1240,7 +1178,7 @@ const FocusPage: React.FC = () => {
                     {/* Pomodoro rest hint */}
                     {mode === 'pomodoro' && isRest && !isRunning && elapsed === 0 && (
                       <div className="mb-6">
-                        <p className="text-sm" style={{ color: 'rgba(232,224,240,0.5)' }}>
+                        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                           专注 {pomodoroFocusMin} 分钟完成！开始 {pomodoroRestMin} 分钟休息
                         </p>
                       </div>
@@ -1252,8 +1190,10 @@ const FocusPage: React.FC = () => {
                         onClick={resetTimer}
                         className="p-3 rounded-full transition-all"
                         style={{
-                          background: 'rgba(255,255,255,0.06)',
-                          color: 'rgba(232,224,240,0.5)',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-tertiary)',
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
                         }}
                         title="重置"
                       >
@@ -1266,6 +1206,8 @@ const FocusPage: React.FC = () => {
                         style={{
                           background: isRunning ? '#f59e0b' : '#6B4C9A',
                           color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
                         }}
                       >
                         {isRunning ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
@@ -1275,8 +1217,10 @@ const FocusPage: React.FC = () => {
                         onClick={endSession}
                         className="p-3 rounded-full transition-all"
                         style={{
-                          background: 'rgba(255,255,255,0.06)',
-                          color: 'rgba(232,224,240,0.5)',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-tertiary)',
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
                         }}
                         title="结束"
                       >
@@ -1292,14 +1236,13 @@ const FocusPage: React.FC = () => {
                 <div
                   className="flex-1 flex flex-col min-h-0 p-4"
                   style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    backdropFilter: 'blur(12px)',
+                    background: 'var(--bg-secondary)',
                     borderRadius: 16,
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    border: '1px solid var(--border-color)',
                   }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold" style={{ color: '#e8e0f0' }}>关联任务</h3>
+                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>关联任务</h3>
                     <button
                       onClick={() => {
                         const title = prompt('新建任务标题：')
@@ -1323,7 +1266,7 @@ const FocusPage: React.FC = () => {
                         }
                       }}
                       className="text-xs hover:underline"
-                      style={{ color: '#6B4C9A' }}
+                      style={{ color: '#6B4C9A', background: 'none', border: 'none', cursor: 'pointer' }}
                     >
                       + 新建任务
                     </button>
@@ -1335,7 +1278,7 @@ const FocusPage: React.FC = () => {
                         key={task.id}
                         className="flex items-center gap-2 p-2 rounded-md transition-colors"
                         style={{
-                          background: linkedTaskId === task.id ? 'rgba(107,76,154,0.15)' : 'transparent',
+                          background: linkedTaskId === task.id ? 'rgba(107,76,154,0.08)' : 'transparent',
                         }}
                       >
                         <button
@@ -1343,7 +1286,8 @@ const FocusPage: React.FC = () => {
                           className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
                           style={{
                             background: task.is_completed ? '#6B4C9A' : 'transparent',
-                            borderColor: task.is_completed ? '#6B4C9A' : 'rgba(255,255,255,0.15)',
+                            borderColor: task.is_completed ? '#6B4C9A' : 'var(--border-color)',
+                            cursor: 'pointer',
                           }}
                         >
                           {task.is_completed && <Check size={10} style={{ color: '#fff' }} />}
@@ -1351,7 +1295,7 @@ const FocusPage: React.FC = () => {
                         <span
                           className="text-sm flex-1 truncate cursor-pointer"
                           style={{
-                            color: linkedTaskId === task.id ? '#6B4C9A' : '#e8e0f0',
+                            color: linkedTaskId === task.id ? '#6B4C9A' : 'var(--text-primary)',
                             fontWeight: linkedTaskId === task.id ? 500 : 400,
                           }}
                           onClick={() => setLinkedTaskId(task.id === linkedTaskId ? null : task.id)}
@@ -1361,7 +1305,7 @@ const FocusPage: React.FC = () => {
                       </div>
                     ))}
                     {incompleteTasks.length === 0 && (
-                      <p className="text-xs text-center py-4" style={{ color: 'rgba(232,224,240,0.3)' }}>暂无待办任务</p>
+                      <p className="text-xs text-center py-4" style={{ color: 'var(--text-tertiary)' }}>暂无待办任务</p>
                     )}
                   </div>
                 </div>
@@ -1390,44 +1334,44 @@ const FocusPage: React.FC = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="rounded-2xl shadow-xl p-6 w-96 mx-4"
-              style={{ background: '#1a1230', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: '#fff', border: '1px solid var(--border-color)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-center mb-4" style={{ color: '#e8e0f0' }}>
+              <h3 className="text-lg font-bold text-center mb-4" style={{ color: 'var(--text-primary)' }}>
                 {isRest ? '休息结束' : '专注完成'}
               </h3>
 
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'rgba(232,224,240,0.5)' }}>时长</span>
-                  <span className="font-medium" style={{ color: '#e8e0f0' }}>{formatTime(summaryData.duration)}</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}>时长</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{formatTime(summaryData.duration)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'rgba(232,224,240,0.5)' }}>模式</span>
-                  <span className="font-medium" style={{ color: '#e8e0f0' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>模式</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                     {summaryData.mode === 'countUp' ? '正计时' : summaryData.mode === 'countDown' ? '倒计时' : '番茄钟'}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'rgba(232,224,240,0.5)' }}>主题</span>
-                  <span className="font-medium truncate max-w-[180px]" style={{ color: '#e8e0f0' }}>{summaryData.theme}</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}>主题</span>
+                  <span className="font-medium truncate max-w-[180px]" style={{ color: 'var(--text-primary)' }}>{summaryData.theme}</span>
                 </div>
                 {linkedTask && (
                   <div className="flex justify-between text-sm">
-                    <span style={{ color: 'rgba(232,224,240,0.5)' }}>关联任务</span>
-                    <span className="font-medium truncate max-w-[180px]" style={{ color: '#e8e0f0' }}>{linkedTask.title}</span>
+                    <span style={{ color: 'var(--text-tertiary)' }}>关联任务</span>
+                    <span className="font-medium truncate max-w-[180px]" style={{ color: 'var(--text-primary)' }}>{linkedTask.title}</span>
                   </div>
                 )}
               </div>
 
               {completedTaskIds.length > 0 && (
                 <div className="mb-5">
-                  <p className="text-xs mb-2" style={{ color: 'rgba(232,224,240,0.5)' }}>本次完成的任务</p>
+                  <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>本次完成的任务</p>
                   <div className="space-y-1">
                     {completedTaskIds.map((id) => {
                       const t = tasks.find((task) => task.id === id)
                       return t ? (
-                        <div key={id} className="flex items-center gap-2 text-sm" style={{ color: '#e8e0f0' }}>
+                        <div key={id} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
                           <Check size={12} style={{ color: '#4ade80' }} />
                           <span className="truncate">{t.title}</span>
                         </div>
@@ -1448,7 +1392,7 @@ const FocusPage: React.FC = () => {
                       setIsRunning(false)
                     }}
                     className="flex-1 py-2.5 text-sm font-medium transition-colors"
-                    style={{ background: 'rgba(45,212,191,0.15)', color: '#2dd4bf', borderRadius: 8 }}
+                    style={{ background: 'rgba(45,212,191,0.1)', color: '#2dd4bf', borderRadius: 8, border: '1px solid rgba(45,212,191,0.2)', cursor: 'pointer' }}
                   >
                     开始休息
                   </button>
@@ -1465,14 +1409,14 @@ const FocusPage: React.FC = () => {
                     }
                   }}
                   className="flex-1 py-2.5 text-sm font-medium transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: '#e8e0f0', borderRadius: 8 }}
+                  style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', borderRadius: 8, border: '1px solid var(--border-color)', cursor: 'pointer' }}
                 >
                   {isRest ? '开始专注' : '再来一轮'}
                 </button>
                 <button
                   onClick={() => setShowSummary(false)}
                   className="flex-1 py-2.5 text-sm font-medium transition-colors"
-                  style={{ background: '#6B4C9A', color: '#fff', borderRadius: 8 }}
+                  style={{ background: '#6B4C9A', color: '#fff', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                 >
                   保存并退出
                 </button>
@@ -1498,16 +1442,16 @@ const FocusPage: React.FC = () => {
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.15 }}
               className="rounded-2xl shadow-xl p-6 w-80 mx-4"
-              style={{ background: '#1a1230', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: '#fff', border: '1px solid var(--border-color)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold" style={{ color: '#e8e0f0' }}>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                   {mode === 'pomodoro' ? '番茄钟设置' : mode === 'countDown' ? '倒计时设置' : '正计时'}
                 </h3>
                 <button
                   onClick={() => setShowSettings(false)}
-                  style={{ color: 'rgba(232,224,240,0.5)' }}
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   <X size={18} />
                 </button>
@@ -1535,14 +1479,14 @@ const FocusPage: React.FC = () => {
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.15 }}
               className="rounded-2xl shadow-xl p-6 w-96 mx-4 max-h-[70vh] overflow-y-auto"
-              style={{ background: '#1a1230', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: '#fff', border: '1px solid var(--border-color)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold" style={{ color: '#e8e0f0' }}>我的音效</h3>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>我的音效</h3>
                 <button
                   onClick={() => setShowSoundUpload(false)}
-                  style={{ color: 'rgba(232,224,240,0.5)' }}
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   <X size={18} />
                 </button>
@@ -1551,13 +1495,13 @@ const FocusPage: React.FC = () => {
               {/* Upload button */}
               <label
                 className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors mb-4"
-                style={{ borderColor: 'rgba(255,255,255,0.1)' }}
+                style={{ borderColor: 'var(--border-color)', background: 'transparent' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(107,76,154,0.5)'
-                  e.currentTarget.style.background = 'rgba(107,76,154,0.05)'
+                  e.currentTarget.style.background = 'rgba(107,76,154,0.03)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+                  e.currentTarget.style.borderColor = 'var(--border-color)'
                   e.currentTarget.style.background = 'transparent'
                 }}
               >
@@ -1569,21 +1513,21 @@ const FocusPage: React.FC = () => {
               {/* Custom sound list */}
               <div className="space-y-2">
                 {soundList.filter((s) => !s.isBuiltin).length === 0 && (
-                  <p className="text-sm text-center py-4" style={{ color: 'rgba(232,224,240,0.3)' }}>暂无自定义音效</p>
+                  <p className="text-sm text-center py-4" style={{ color: 'var(--text-tertiary)' }}>暂无自定义音效</p>
                 )}
                 {soundList.filter((s) => !s.isBuiltin).map((sound) => (
                   <div
                     key={sound.id}
                     className="flex items-center justify-between p-2 rounded-md"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                    style={{ background: 'var(--bg-secondary)' }}
                   >
-                    <span className="text-sm truncate" style={{ color: '#e8e0f0' }}>{sound.name}</span>
+                    <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{sound.name}</span>
                     <button
                       onClick={() => deleteCustomSound(sound.id)}
                       className="p-1 transition-colors"
-                      style={{ color: 'rgba(232,224,240,0.4)' }}
+                      style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(232,224,240,0.4)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                     >
                       <X size={14} />
                     </button>
