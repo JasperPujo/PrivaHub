@@ -53,127 +53,50 @@ const formatTime = (seconds: number) => {
 }
 
 /* ================================================================
-   Flip Clock Inline Styles (light theme)
+   Flip Clock - Simple & Reliable (light theme)
    ================================================================ */
 
-const flipCardStyles: React.CSSProperties = {
+const digitCardStyle: React.CSSProperties = {
+  width: 72,
+  height: 100,
+  borderRadius: 12,
+  background: 'var(--bg-secondary)',
+  border: '1px solid var(--border-color)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   position: 'relative',
-  width: 80,
-  height: 104,
-  perspective: 400,
-  borderRadius: 10,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
-  background: '#f5f5f7',
-}
-
-const cardFaceBase: React.CSSProperties = {
-  position: 'absolute',
-  inset: 0,
   overflow: 'hidden',
-  borderRadius: 10,
-  background: '#f5f5f7',
 }
 
-const cardUpperStyle: React.CSSProperties = {
-  ...cardFaceBase,
-  clipPath: 'inset(0 0 50% 0)',
-  display: 'flex',
-  alignItems: 'flex-end',
-  justifyContent: 'center',
-  borderBottom: '1px solid rgba(0,0,0,0.08)',
-}
-
-const cardLowerStyle: React.CSSProperties = {
-  ...cardFaceBase,
-  clipPath: 'inset(50% 0 0 0)',
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-}
-
-const digitTextStyle: React.CSSProperties = {
+const digitSpanStyle: React.CSSProperties = {
   fontFamily: "'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace",
-  fontSize: 52,
+  fontSize: 48,
   fontWeight: 700,
   lineHeight: 1,
-  color: '#333',
+  color: 'var(--text-primary)',
   userSelect: 'none',
 }
 
-const flipUpperStyle: React.CSSProperties = {
-  position: 'absolute',
-  inset: 0,
-  clipPath: 'inset(0 0 50% 0)',
-  display: 'flex',
-  alignItems: 'flex-end',
-  justifyContent: 'center',
-  background: '#f5f5f7',
-  borderRadius: '10px 10px 0 0',
-  borderBottom: '1px solid rgba(0,0,0,0.08)',
-  zIndex: 10,
-  transformOrigin: 'bottom center',
-}
-
-const flipLowerStyle: React.CSSProperties = {
-  position: 'absolute',
-  inset: 0,
-  clipPath: 'inset(50% 0 0 0)',
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-  background: '#f5f5f7',
-  borderRadius: '0 0 10px 10px',
-  zIndex: 10,
-  transformOrigin: 'top center',
-  transform: 'rotateX(90deg)',
-}
-
 /* ================================================================
-   FlipDigit Component
+   FlipDigit Component (simplified - always shows current digit)
    ================================================================ */
 
-const FlipDigit: React.FC<{ digit: string; prevDigit: string }> = ({ digit, prevDigit }) => {
-  const isFlipping = digit !== prevDigit
-
+const FlipDigit: React.FC<{ digit: string; prevDigit: string }> = ({ digit }) => {
   return (
-    <div style={flipCardStyles}>
-      {/* Static lower: shows PREVIOUS digit (revealed after flip) */}
-      <div style={cardLowerStyle}>
-        <span style={{ ...digitTextStyle, transform: 'translateY(-50%)' }}>{prevDigit}</span>
-      </div>
-
-      {/* Static upper: shows CURRENT digit (always visible on top) */}
-      <div style={cardUpperStyle}>
-        <span style={{ ...digitTextStyle, transform: 'translateY(50%)' }}>{digit}</span>
-      </div>
-
-      {/* Animated upper flap: starts showing PREVIOUS, flips down to reveal CURRENT */}
+    <div style={digitCardStyle}>
+      {/* Center dividing line */}
       <div style={{
-        ...flipUpperStyle,
-        animation: isFlipping ? 'flipClockFlipUpper 0.6s ease-in forwards' : 'none',
-      }}>
-        <span style={{ ...digitTextStyle, transform: 'translateY(50%)' }}>{prevDigit}</span>
-      </div>
-
-      {/* Animated lower flap: starts hidden, flips down showing CURRENT */}
-      <div style={{
-        ...flipLowerStyle,
-        animation: isFlipping ? 'flipClockFlipLower 0.6s 0.3s ease-out forwards' : 'none',
-      }}>
-        <span style={{ ...digitTextStyle, transform: 'translateY(-50%)' }}>{digit}</span>
-      </div>
-
-      {/* Inline keyframes for flip animations */}
-      <style>{`
-        @keyframes flipClockFlipUpper {
-          0%   { transform: rotateX(0deg); }
-          100% { transform: rotateX(-90deg); }
-        }
-        @keyframes flipClockFlipLower {
-          0%   { transform: rotateX(90deg); }
-          100% { transform: rotateX(0deg); }
-        }
-      `}</style>
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: '50%',
+        height: 1,
+        background: 'rgba(0,0,0,0.06)',
+        zIndex: 2,
+      }} />
+      <span style={digitSpanStyle}>{digit}</span>
     </div>
   )
 }
@@ -184,7 +107,6 @@ const FlipDigit: React.FC<{ digit: string; prevDigit: string }> = ({ digit, prev
 
 const FlipClock: React.FC = () => {
   const [now, setNow] = useState(new Date())
-  const [prevDigits, setPrevDigits] = useState('')
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -196,75 +118,32 @@ const FlipClock: React.FC = () => {
   const hours = String(now.getHours()).padStart(2, '0')
   const minutes = String(now.getMinutes()).padStart(2, '0')
   const seconds = String(now.getSeconds()).padStart(2, '0')
-  const currentDigits = hours + minutes + seconds
-
-  const prevArr = prevDigits.length === 6
-    ? prevDigits.split('')
-    : hours.split('').concat(minutes.split(''), seconds.split(''))
-  const currArr = currentDigits.split('')
-
-  useEffect(() => {
-    setPrevDigits(currentDigits)
-  }, [currentDigits])
 
   const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
   const dayStr = weekDays[now.getDay()]
 
+  const digits = (hours + minutes + seconds).split('')
+  const separator = (
+    <div className="flex flex-col" style={{ gap: 12, padding: '0 4px' }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6B4C9A', boxShadow: '0 0 6px rgba(107,76,154,0.3)', display: 'block' }} />
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6B4C9A', boxShadow: '0 0 6px rgba(107,76,154,0.3)', display: 'block' }} />
+    </div>
+  )
+
   return (
     <div className="flex flex-col items-center">
-      <div className="flex items-center" style={{ gap: 8 }}>
-        <FlipDigit digit={currArr[0]} prevDigit={prevArr[0]} />
-        <FlipDigit digit={currArr[1]} prevDigit={prevArr[1]} />
-
-        {/* Separator */}
-        <div className="flex flex-col" style={{ gap: 14, padding: '0 2px' }}>
-          <span style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#6B4C9A',
-            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
-            display: 'block',
-          }} />
-          <span style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#6B4C9A',
-            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
-            display: 'block',
-          }} />
-        </div>
-
-        <FlipDigit digit={currArr[2]} prevDigit={prevArr[2]} />
-        <FlipDigit digit={currArr[3]} prevDigit={prevArr[3]} />
-
-        {/* Separator */}
-        <div className="flex flex-col" style={{ gap: 14, padding: '0 2px' }}>
-          <span style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#6B4C9A',
-            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
-            display: 'block',
-          }} />
-          <span style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: '#6B4C9A',
-            boxShadow: '0 0 6px rgba(107,76,154,0.3)',
-            display: 'block',
-          }} />
-        </div>
-
-        <FlipDigit digit={currArr[4]} prevDigit={prevArr[4]} />
-        <FlipDigit digit={currArr[5]} prevDigit={prevArr[5]} />
+      <div className="flex items-center" style={{ gap: 6 }}>
+        <FlipDigit digit={digits[0]} prevDigit="" />
+        <FlipDigit digit={digits[1]} prevDigit="" />
+        {separator}
+        <FlipDigit digit={digits[2]} prevDigit="" />
+        <FlipDigit digit={digits[3]} prevDigit="" />
+        {separator}
+        <FlipDigit digit={digits[4]} prevDigit="" />
+        <FlipDigit digit={digits[5]} prevDigit="" />
       </div>
-
-      <div className="mt-6 text-lg tracking-widest" style={{ color: 'var(--text-tertiary)' }}>
+      <div className="mt-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>
         {dateStr} {dayStr}
       </div>
     </div>
@@ -272,6 +151,8 @@ const FlipClock: React.FC = () => {
 }
 
 /* ================================================================
+   Mode Entry Cards Config
+   ================================================================ *//* ================================================================
    Mode Entry Cards Config
    ================================================================ */
 

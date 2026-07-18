@@ -32,14 +32,23 @@ const Login: React.FC = () => {
     const savedEmail = localStorage.getItem('privahub_last_email')
     const savedRemember = localStorage.getItem('privahub_remember_password')
     const savedAutoLogin = localStorage.getItem('privahub_auto_login')
+    // 检查版本是否变化，变化则清除密码（重装/更新后需重新输入密码）
+    const savedVersion = localStorage.getItem('privahub_installed_version')
+    const currentVersion = '1.2.0'
+    const versionChanged = savedVersion && savedVersion !== currentVersion
+    if (versionChanged) {
+      localStorage.removeItem('privahub_saved_password')
+      localStorage.setItem('privahub_installed_version', currentVersion)
+    }
     if (savedEmail) {
-      const savedPwd = localStorage.getItem('privahub_saved_password')
+      // 版本变化或未记住密码时，不填充密码
+      const savedPwd = (!versionChanged && savedRemember === 'true') ? (localStorage.getItem('privahub_saved_password') || '') : ''
       setLoginForm(prev => ({
         ...prev,
         username: savedEmail,
-        password: savedPwd || '',
+        password: savedPwd,
         rememberPassword: savedRemember === 'true',
-        autoLogin: savedAutoLogin === 'true',
+        autoLogin: versionChanged ? false : (savedAutoLogin === 'true'),
       }))
     }
   }, [])
@@ -125,6 +134,8 @@ const Login: React.FC = () => {
       updated_at: new Date().toISOString()
     })
 
+    // 记录当前安装版本
+    localStorage.setItem('privahub_installed_version', '1.2.0')
     // 保存登录信息到 localStorage（不依赖 Supabase session）
     localStorage.setItem('privahub_last_email', loginForm.username)
     localStorage.setItem('privahub_remember_password', String(loginForm.rememberPassword))
