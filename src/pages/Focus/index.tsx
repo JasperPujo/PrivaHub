@@ -1013,7 +1013,7 @@ const FocusPage: React.FC = () => {
             {/* Main content area */}
             <div className="flex-1 flex gap-6 min-h-0">
               {/* Left: Timer core */}
-              <div className="flex-[2] flex flex-col items-center justify-center">
+              <div className={isFullscreen ? "flex-1 flex flex-col items-center justify-center" : "flex-[2] flex flex-col items-center justify-center"}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={mode + isRest}
@@ -1025,7 +1025,7 @@ const FocusPage: React.FC = () => {
                   >
                     {/* Timer digits */}
                     <div
-                      className="text-7xl md:text-8xl font-bold tracking-tight font-mono mb-4"
+                      className={isFullscreen ? "text-9xl font-bold tracking-tight font-mono mb-4" : "text-7xl md:text-8xl font-bold tracking-tight font-mono mb-4"}
                       style={{ color: isRest ? '#2dd4bf' : '#6B4C9A' }}
                     >
                       {formatTime(displayTime)}
@@ -1332,8 +1332,8 @@ const FocusPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Right: Linked task info panel */}
-              <div className="flex-1 flex flex-col gap-4 min-w-[280px] max-w-[360px]">
+              {/* Right: Linked task info panel - hidden in fullscreen */}
+              {!isFullscreen && <div className="flex-1 flex flex-col gap-4 min-w-[280px] max-w-[360px]">
                 <div
                   className="flex-1 flex flex-col min-h-0 p-4"
                   style={{
@@ -1441,7 +1441,7 @@ const FocusPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </div>}
             </div>
           </div>
         </div>

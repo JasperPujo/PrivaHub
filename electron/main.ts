@@ -135,11 +135,11 @@ ipcMain.handle('app:maximizeWindow', () => { if (mainWindow?.isMaximized()) { ma
 ipcMain.handle('app:closeWindow', () => { mainWindow?.close() })
 ipcMain.handle('app:toggleFullscreen', async () => {
   if (!mainWindow) return false
-  if (mainWindow.isFullScreen()) {
-    mainWindow.setFullScreen(false)
+  if (mainWindow.isKiosk()) {
+    mainWindow.setKiosk(false)
     return false
   } else {
-    mainWindow.setFullScreen(true)
+    mainWindow.setKiosk(true)
     return true
   }
 })
