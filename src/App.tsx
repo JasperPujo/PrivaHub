@@ -177,7 +177,7 @@ function App() {
     return (
       <div className={themeClass}>
         <ElectronTitleBar />
-        <div className="pt-8">
+        <div className={isFocusFullscreen ? "" : "pt-8"}>
           <Login />
         </div>
         <Notification />
@@ -189,7 +189,7 @@ function App() {
     <div className={`h-screen w-screen flex overflow-hidden ${themeClass}`}>
       <ElectronTitleBar />
       {lockScreen.isLocked && <LockScreen />}
-      <Layout className="pt-8">
+      <Layout className={isFocusFullscreen ? "" : "pt-8"}>
         <AnimatedRoutes />
       </Layout>
       <Notification />
