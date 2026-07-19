@@ -40,17 +40,6 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
   } = useAppStore()
   const { lastSyncTimeRef } = useAutoSync()
 
-  // Focus 无边框全屏时隐藏侧边栏和顶栏
-  const [isFocusFullscreen, setIsFocusFullscreen] = React.useState(false)
-  React.useEffect(() => {
-    const handler = () => {
-      const v = document.documentElement.style.getPropertyValue('--focus-fullscreen')
-      setIsFocusFullscreen(v === '1')
-    }
-    window.addEventListener('focus-fullscreen-change', handler)
-    return () => window.removeEventListener('focus-fullscreen-change', handler)
-  }, [])
-
   const [showUserMenu, setShowUserMenu] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -168,7 +157,6 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
         animate={{ width: sidebarCollapsed ? 72 : 240 }}
         transition={{ duration: 0.25, ease: 'easeInOut' }}
         className="flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)] flex-shrink-0"
-        style={isFocusFullscreen ? { display: 'none' } : undefined}
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--border-color)]">
@@ -292,7 +280,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
       {/* 主内容区 */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* 顶部栏 */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex-shrink-0" style={isFocusFullscreen ? { display: 'none' } : undefined}>
+        <header className="h-16 flex items-center justify-between px-6 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex-shrink-0">
           <h1 className="text-lg font-medium text-[var(--text-primary)]">
             {visibleModules.find(m => m.path === location.pathname)?.title || '主页'}
           </h1>

@@ -51,8 +51,7 @@ function createWindow(): void {
   }
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-  })
+    mainWindow?.show()})
 
   mainWindow.on('close', (event) => {
     event.preventDefault()

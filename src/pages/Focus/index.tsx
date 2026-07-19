@@ -248,8 +248,22 @@ const FocusPage: React.FC = () => {
     if (window.electronAPI?.toggleFullscreen) {
       const next = await window.electronAPI.toggleFullscreen()
       setIsFullscreen(next)
-      document.documentElement.style.setProperty('--focus-fullscreen', next ? '1' : '0')
-      window.dispatchEvent(new Event('focus-fullscreen-change'))
+      // 纯 DOM 操作隐藏侧边栏、顶栏、ElectronTitleBar
+      const aside = document.querySelector('aside') as HTMLElement | null
+      const header = document.querySelector('header') as HTMLElement | null
+      const titleBar = document.querySelector('.fixed.top-0') as HTMLElement | null
+      const mainWrap = document.querySelector('.h-screen.w-screen') as HTMLElement | null
+      if (next) {
+        aside && (aside.style.display = 'none')
+        header && (header.style.display = 'none')
+        titleBar && (titleBar.style.display = 'none')
+        mainWrap && (mainWrap.style.paddingTop = '0')
+      } else {
+        aside && (aside.style.display = '')
+        header && (header.style.display = '')
+        titleBar && (titleBar.style.display = '')
+        mainWrap && (mainWrap.style.paddingTop = '')
+      }
     }
   }, [])
 

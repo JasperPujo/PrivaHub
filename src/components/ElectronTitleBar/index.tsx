@@ -14,18 +14,8 @@ declare global {
 
 const ElectronTitleBar: React.FC = () => {
   const isElectron = !!(window as any).electronAPI
-  const [hidden, setHidden] = React.useState(false)
 
-  React.useEffect(() => {
-    const check = () => {
-      const v = document.documentElement.style.getPropertyValue('--focus-fullscreen')
-      setHidden(v === '1')
-    }
-    window.addEventListener('focus-fullscreen-change', check)
-    return () => window.removeEventListener('focus-fullscreen-change', check)
-  }, [])
-
-  if (!isElectron || hidden) return null
+  if (!isElectron) return null
 
   return (
     <div
