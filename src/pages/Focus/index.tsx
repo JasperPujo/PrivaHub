@@ -947,7 +947,7 @@ const FocusPage: React.FC = () => {
               <button
                 onClick={goHome}
                 className="flex items-center gap-1.5 text-sm transition-colors"
-                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', opacity: isFullscreen ? 0.5 : 1 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
               >
@@ -955,30 +955,33 @@ const FocusPage: React.FC = () => {
                 <span>返回</span>
               </button>
 
-              <div className="flex items-center gap-1 p-1" style={{ background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
-                {([
-                  { key: 'countUp' as const, label: '正计时' },
-                  { key: 'countDown' as const, label: '倒计时' },
-                  { key: 'pomodoro' as const, label: '番茄钟' },
-                ]).map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => setMode(m.key)}
-                    className="px-4 py-1.5 text-sm font-medium rounded-md transition-all"
-                    style={{
-                      background: mode === m.key ? '#6B4C9A' : 'transparent',
-                      color: mode === m.key ? '#fff' : 'var(--text-tertiary)',
-                      boxShadow: mode === m.key ? '0 2px 8px rgba(107,76,154,0.3)' : 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {m.label}
-                  </button>
-                ))}
+              <div className="flex-1 flex justify-center">
+                <div className="flex items-center gap-1 p-1" style={{ background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                  {([
+                    { key: 'countUp' as const, label: '正计时' },
+                    { key: 'countDown' as const, label: '倒计时' },
+                    { key: 'pomodoro' as const, label: '番茄钟' },
+                  ]).map((m) => (
+                    <button
+                      key={m.key}
+                      onClick={() => setMode(m.key)}
+                      className="px-4 py-1.5 text-sm font-medium rounded-md transition-all"
+                      style={{
+                        background: mode === m.key ? '#6B4C9A' : 'transparent',
+                        color: mode === m.key ? '#fff' : 'var(--text-tertiary)',
+                        boxShadow: mode === m.key ? '0 2px 8px rgba(107,76,154,0.3)' : 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
+                {!isFullscreen && (
                 <button
                   onClick={() => navigate('/focus/stats')}
                   className="text-sm flex items-center gap-1 transition-colors"
@@ -987,6 +990,7 @@ const FocusPage: React.FC = () => {
                   <BarChart2 size={16} />
                   <span>统计</span>
                 </button>
+                )}
                 <div className="ml-auto flex items-center gap-1">
                   <button
                     onClick={toggleFullscreen}
@@ -999,6 +1003,7 @@ const FocusPage: React.FC = () => {
                     <Expand size={16} />
                   </button>
                 </div>
+                {!isFullscreen && (
                 <button
                   onClick={() => setShowSettings(true)}
                   className="p-2 rounded-lg transition-colors"
@@ -1007,6 +1012,7 @@ const FocusPage: React.FC = () => {
                 >
                   <Settings size={18} />
                 </button>
+                )}
               </div>
             </div>
 
@@ -1049,7 +1055,7 @@ const FocusPage: React.FC = () => {
                     )}
 
                     {/* Theme / task line with selection panel */}
-                    <div className="mb-8" style={{ position: 'relative' }} ref={topicPanelRef}>
+                    {!isFullscreen && <div className="mb-8" style={{ position: 'relative' }} ref={topicPanelRef}>
                       <button
                         onClick={() => {
                           if (isRunning) return
@@ -1228,7 +1234,7 @@ const FocusPage: React.FC = () => {
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+                    </div>}
 
                     {/* Progress bar */}
                     {(mode === 'countDown' || mode === 'pomodoro') && targetDuration > 0 && (
@@ -1298,7 +1304,7 @@ const FocusPage: React.FC = () => {
                         }}
                         title="重置"
                       >
-                        <RotateCcw size={20} />
+                        <RotateCcw size={isFullscreen ? 28 : 20} />
                       </button>
 
                       <button
@@ -1311,7 +1317,7 @@ const FocusPage: React.FC = () => {
                           cursor: 'pointer',
                         }}
                       >
-                        {isRunning ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+                        {isRunning ? <Pause size={isFullscreen ? 32 : 28} /> : <Play size={isFullscreen ? 32 : 28} className="ml-1" />}
                       </button>
 
                       <button
@@ -1325,7 +1331,7 @@ const FocusPage: React.FC = () => {
                         }}
                         title="结束"
                       >
-                        <Square size={20} />
+                        <Square size={isFullscreen ? 28 : 20} />
                       </button>
                     </div>
                   </motion.div>
@@ -1448,7 +1454,7 @@ const FocusPage: React.FC = () => {
       )}
 
       {/* ==================== WHITE NOISE FLOATING PANEL (shared) ==================== */}
-      {renderSoundPanel()}
+      {!isFullscreen && renderSoundPanel()}
 
       {/* ==================== 结算弹窗 ==================== */}
       <AnimatePresence>
