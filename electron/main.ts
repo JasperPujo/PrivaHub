@@ -133,6 +133,16 @@ ipcMain.handle('app:quit', () => { app.quit() })
 ipcMain.handle('app:minimizeWindow', () => { mainWindow?.minimize() })
 ipcMain.handle('app:maximizeWindow', () => { if (mainWindow?.isMaximized()) { mainWindow.unmaximize() } else { mainWindow?.maximize() } })
 ipcMain.handle('app:closeWindow', () => { mainWindow?.close() })
+ipcMain.handle('app:toggleFullscreen', async () => {
+  if (!mainWindow) return false
+  if (mainWindow.isFullScreen()) {
+    mainWindow.setFullScreen(false)
+    return false
+  } else {
+    mainWindow.setFullScreen(true)
+    return true
+  }
+})
 ipcMain.handle('app:checkForUpdate', () => autoUpdater.checkForUpdates())
 ipcMain.handle('app:downloadUpdate', () => autoUpdater.downloadUpdate())
 ipcMain.handle('app:quitAndInstall', () => autoUpdater.quitAndInstall())
