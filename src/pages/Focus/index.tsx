@@ -7,7 +7,7 @@ import {
   Play, Pause, RotateCcw, Square, Check, Volume2, VolumeX,
   SkipForward, SkipBack, Settings, X, Headphones, Upload,
   Repeat, Shuffle, ListMusic, BarChart2, Clock, ChevronRight, Zap, Target,
-  Maximize2, Minimize2
+  Expand
 } from '@/utils/icons'
 import { generateUUID } from '@/lib/utils'
 
@@ -242,22 +242,12 @@ const FocusPage: React.FC = () => {
     return () => clearInterval(timer)
   }, [])
 
-  // ---- 全屏切换 ----
+  // ---- 无边框全屏切换（Electron 原生 setFullScreen） ----
   const [isFullscreen, setIsFullscreen] = useState(false)
-  useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', onFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
-  }, [])
-  const toggleFullscreen = useCallback(() => {
+  const toggleFullscreen = useCallback(async () => {
     if (window.electronAPI?.toggleFullscreen) {
-      window.electronAPI.toggleFullscreen()
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen()
-    } else {
-      document.documentElement.requestFullscreen()
+      const next = await window.electronAPI.toggleFullscreen()
+      setIsFullscreen(next)
     }
   }, [])
 
@@ -940,7 +930,7 @@ const FocusPage: React.FC = () => {
               onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
               title={isFullscreen ? '退出全屏' : '全屏'}
             >
-              {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              <Expand size={16} />
             </button>
           </motion.div>
         </div>
@@ -995,16 +985,18 @@ const FocusPage: React.FC = () => {
                   <BarChart2 size={16} />
                   <span>统计</span>
                 </button>
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 rounded-lg transition-colors"
-                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                  title={isFullscreen ? '退出全屏' : '全屏'}
-                >
-                  {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                </button>
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                    title={isFullscreen ? '退出全屏' : '全屏'}
+                  >
+                    <Expand size={16} />
+                  </button>
+                </div>
                 <button
                   onClick={() => setShowSettings(true)}
                   className="p-2 rounded-lg transition-colors"

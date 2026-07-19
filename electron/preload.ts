@@ -11,6 +11,7 @@ export interface ElectronAPI {
   minimizeWindow: () => Promise<void>
   maximizeWindow: () => Promise<void>
   closeWindow: () => Promise<void>
+  toggleFullscreen: () => Promise<boolean>
   checkForUpdate: () => Promise<void>
   downloadUpdate: () => Promise<void>
   quitAndInstall: () => Promise<void>
@@ -31,6 +32,7 @@ const electronAPI: ElectronAPI = {
   minimizeWindow: () => ipcRenderer.invoke('app:minimizeWindow'),
   maximizeWindow: () => ipcRenderer.invoke('app:maximizeWindow'),
   closeWindow: () => ipcRenderer.invoke('app:closeWindow'),
+  toggleFullscreen: () => ipcRenderer.invoke('app:toggleFullscreen'),
   checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
   downloadUpdate: () => ipcRenderer.invoke('app:downloadUpdate'),
   quitAndInstall: () => ipcRenderer.invoke('app:quitAndInstall'),
