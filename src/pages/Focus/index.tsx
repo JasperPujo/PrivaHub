@@ -248,6 +248,8 @@ const FocusPage: React.FC = () => {
     if (window.electronAPI?.toggleFullscreen) {
       const next = await window.electronAPI.toggleFullscreen()
       setIsFullscreen(next)
+      document.documentElement.style.setProperty('--focus-fullscreen', next ? '1' : '0')
+      window.dispatchEvent(new Event('focus-fullscreen-change'))
     }
   }, [])
 
