@@ -26,6 +26,13 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.2.6',
+    date: '2026-07-19',
+    changes: [
+      '优化：版本号更新至 V1.2.6',
+    ]
+  },
+  {
     version: 'V1.2.0',
     date: '2026-07-16',
     changes: [
@@ -95,7 +102,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.2.0'
+        const currentVersion = '1.2.6'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -182,11 +189,11 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.2.0</span>
+            <span className="text-[#222] font-medium">V1.2.6</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
-            <span className="text-[#222]">2026-07-16</span>
+            <span className="text-[#222]">2026-07-19</span>
           </div>
           <p className="text-xs text-[#aaa] mt-2 pt-2 border-t border-gray-50">
             Electron + Supabase 云端同步 | 本地加密缓存
@@ -279,7 +286,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.2.0</span>
+          <span className="text-sm text-[#555]">当前版本 V1.2.6</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
