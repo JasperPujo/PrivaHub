@@ -498,12 +498,6 @@ const NotesPage: React.FC = () => {
                     编辑墙信息
                   </button>
                   <button
-                    onClick={() => setConfirmDeleteWall(activeWall.id)}
-                    className="text-sm text-[var(--text-tertiary)] hover:text-danger transition-colors"
-                  >
-                    删除
-                  </button>
-                  <button
                     onClick={() => { resetNoteForm(); setShowNoteModal(true) }}
                     className="btn-primary flex items-center gap-2"
                   >
@@ -567,6 +561,20 @@ const NotesPage: React.FC = () => {
             <label className="block text-sm font-medium mb-1.5">描述</label>
             <textarea value={wallForm.description} onChange={e => setWallForm(prev => ({ ...prev, description: e.target.value }))} placeholder="描述（可选）" rows={2} className="input-dark resize-none" />
           </div>
+          {editingWall && (
+            <div className="pt-2 border-t border-[var(--border-color)]">
+              <button
+                onClick={() => {
+                  setShowWallModal(false)
+                  resetWallForm()
+                  setConfirmDeleteWall(editingWall.id)
+                }}
+                className="text-xs text-danger/60 hover:text-danger transition-colors"
+              >
+                删除此主题墙
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
 

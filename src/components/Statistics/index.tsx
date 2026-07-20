@@ -250,7 +250,8 @@ export const RadarChart: FC<{
   title: string
   indicators: { name: string; max: number }[]
   data: { name: string; value: number[] }[]
-}> = ({ title, indicators, data }) => {
+  color?: string | string[]
+}> = ({ title, indicators, data, color }) => {
   if (data.length === 0 || indicators.length === 0) {
     return (
       <ChartCard title={title}>
@@ -258,6 +259,13 @@ export const RadarChart: FC<{
       </ChartCard>
     )
   }
+
+  const defaultColors = ['#7C6BC4', '#9B7EC9', '#B8A0DC']
+  const resolvedColors: string[] = typeof color === 'string'
+    ? data.map((_, i) => color)
+    : Array.isArray(color) && color.length > 0
+      ? color
+      : defaultColors
 
   const option = {
     tooltip: { trigger: 'item' },
@@ -275,7 +283,7 @@ export const RadarChart: FC<{
       data: data.map((d, i) => ({
         value: d.value,
         name: d.name,
-        itemStyle: { color: ['#7C6BC4', '#9B7EC9', '#B8A0DC'][i % 3] },
+        itemStyle: { color: resolvedColors[i % resolvedColors.length] },
         areaStyle: { opacity: 0.2 },
       })),
     }],

@@ -114,76 +114,87 @@ const HabitStatsPage: React.FC = () => {
       weeklyData.push({ date: `${weekStart.getMonth() + 1}/${weekStart.getDate()}`, value: count })
     }
 
-    // 雷达图
-    const radarIndicators = [
-      { name: '近7天完成率', max: 100 },
-      { name: '近30天完成率', max: 100 },
-      { name: '总完成率', max: 100 },
-      { name: '当前连续天数', max: 7 },
-      { name: '最长连续天数', max: 30 },
-    ]
+    // 雷达图 - 按习惯类型分别计算
+    const buildRadarForHabits = (habits: typeof filteredHabits) => {
+      if (habits.length === 0) return null
 
-    const radarData = filteredHabits.map(habit => {
-      const checkinSet = new Set(habit.checkins.map(c => c.date))
+      const indicators = [
+        { name: '近7天完成率', max: 100 },
+        { name: '近30天完成率', max: 100 },
+        { name: '总完成率', max: 100 },
+        { name: '当前连续天数', max: 7 },
+        { name: '最长连续天数', max: 30 },
+      ]
 
-      let count7 = 0
-      for (let i = 0; i < 7; i++) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
-        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        if (checkinSet.has(ds)) count7++
-      }
-      const rate7 = Math.round((count7 / 7) * 100)
+      const data = habits.map(habit => {
+        const checkinSet = new Set(habit.checkins.map(c => c.date))
 
-      let count30 = 0
-      for (let i = 0; i < 30; i++) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
-        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        if (checkinSet.has(ds)) count30++
-      }
-      const rate30 = Math.round((count30 / 30) * 100)
-
-      const createdDate = new Date(habit.created_at)
-      const now = new Date()
-      const totalDays = Math.max(1, Math.ceil((now.getTime() - createdDate.getTime()) / (24 * 60 * 60 * 1000)))
-      const rateAll = Math.min(100, Math.round((habit.checkins.length / totalDays) * 100))
-
-      let curStreak = 0
-      for (let i = 0; i < 365; i++) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
-        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        if (checkinSet.has(ds)) curStreak++
-        else if (i > 0) break
-      }
-
-      let bestStreak = 0
-      const sortedDates = habit.checkins.map(c => c.date).sort()
-      let streak = 0
-      let prevDate: Date | null = null
-      for (const dateStr of sortedDates) {
-        const d = new Date(dateStr + 'T00:00:00')
-        if (prevDate) {
-          const diff = (d.getTime() - prevDate.getTime()) / (24 * 60 * 60 * 1000)
-          if (diff === 1) streak++
-          else streak = 1
-        } else {
-          streak = 1
+        let count7 = 0
+        for (let i = 0; i < 7; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          if (checkinSet.has(ds)) count7++
         }
-        prevDate = d
-        bestStreak = Math.max(bestStreak, streak)
-      }
+        const rate7 = Math.round((count7 / 7) * 100)
 
-      return { name: habit.name, value: [rate7, rate30, rateAll, curStreak, bestStreak] }
-    })
+        let count30 = 0
+        for (let i = 0; i < 30; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          if (checkinSet.has(ds)) count30++
+        }
+        const rate30 = Math.round((count30 / 30) * 100)
 
-    const maxCurStreak = Math.max(7, ...radarData.map(d => d.value[3]))
-    const maxBestStreak = Math.max(30, ...radarData.map(d => d.value[4]))
-    radarIndicators[3].max = maxCurStreak
-    radarIndicators[4].max = maxBestStreak
+        const createdDate = new Date(habit.created_at)
+        const now = new Date()
+        const totalDays = Math.max(1, Math.ceil((now.getTime() - createdDate.getTime()) / (24 * 60 * 60 * 1000)))
+        const rateAll = Math.min(100, Math.round((habit.checkins.length / totalDays) * 100))
 
-    return { totalCheckIns, currentStreak, maxStreak, completionRate, last30DaysData, last30DaysRateData, weeklyData, radarIndicators, radarData }
+        let curStreak = 0
+        for (let i = 0; i < 365; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          if (checkinSet.has(ds)) curStreak++
+          else if (i > 0) break
+        }
+
+        let bestStreak = 0
+        const sortedDates = habit.checkins.map(c => c.date).sort()
+        let streak = 0
+        let prevDate: Date | null = null
+        for (const dateStr of sortedDates) {
+          const d = new Date(dateStr + 'T00:00:00')
+          if (prevDate) {
+            const diff = (d.getTime() - prevDate.getTime()) / (24 * 60 * 60 * 1000)
+            if (diff === 1) streak++
+            else streak = 1
+          } else {
+            streak = 1
+          }
+          prevDate = d
+          bestStreak = Math.max(bestStreak, streak)
+        }
+
+        return { name: habit.name, value: [rate7, rate30, rateAll, curStreak, bestStreak] }
+      })
+
+      const maxCurStreak = Math.max(7, ...data.map(d => d.value[3]))
+      const maxBestStreak = Math.max(30, ...data.map(d => d.value[4]))
+      indicators[3].max = maxCurStreak
+      indicators[4].max = maxBestStreak
+
+      return { indicators, data }
+    }
+
+    const positiveHabitsFiltered = filteredHabits.filter(h => h.type === 'positive')
+    const negativeHabitsFiltered = filteredHabits.filter(h => h.type === 'negative')
+    const positiveRadar = buildRadarForHabits(positiveHabitsFiltered)
+    const negativeRadar = buildRadarForHabits(negativeHabitsFiltered)
+
+    return { totalCheckIns, currentStreak, maxStreak, completionRate, last30DaysData, last30DaysRateData, weeklyData, positiveRadar, negativeRadar }
   }, [filteredHabits])
 
   return (
@@ -236,12 +247,38 @@ const HabitStatsPage: React.FC = () => {
             {/* 每周打卡次数对比（BarChart） */}
             <StatsCard title="每周打卡次数对比" data={stats.weeklyData} type="bar" />
 
-            {/* 各习惯打卡情况（雷达图） */}
-            <RadarChart
-              title="各习惯打卡情况"
-              indicators={stats.radarIndicators}
-              data={stats.radarData}
-            />
+            {/* 积极习惯 / 消极习惯 雷达图 */}
+            {stats.positiveRadar && stats.negativeRadar ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <RadarChart
+                  title="积极习惯打卡情况"
+                  indicators={stats.positiveRadar.indicators}
+                  data={stats.positiveRadar.data}
+                  color="#22c55e"
+                />
+                <RadarChart
+                  title="消极习惯打卡情况"
+                  indicators={stats.negativeRadar.indicators}
+                  data={stats.negativeRadar.data}
+                  color="#f97316"
+                />
+              </div>
+            ) : stats.positiveRadar ? (
+              <RadarChart
+                title="积极习惯打卡情况"
+                indicators={stats.positiveRadar.indicators}
+                data={stats.positiveRadar.data}
+                color="#22c55e"
+              />
+            ) : stats.negativeRadar ? (
+              <RadarChart
+                title="消极习惯打卡情况"
+                indicators={stats.negativeRadar.indicators}
+                data={stats.negativeRadar.data}
+                color="#f97316"
+              />
+            ) : null}
+
             {/* 习惯类型分组说明 */}
             {(() => {
               const positiveNames = filteredHabits.filter(h => h.type === 'positive').map(h => h.name)

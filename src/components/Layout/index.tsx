@@ -281,11 +281,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* 顶部栏 */}
         <header className="h-16 flex items-center justify-between px-6 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex-shrink-0">
-          {!sidebarCollapsed && (
-            <h1 className="text-lg font-medium text-[var(--text-primary)]">
-              {visibleModules.find(m => m.path === location.pathname)?.title || '主页'}
-            </h1>
-          )}
+          <div className="flex-1" />
 
           <div className="flex items-center gap-3">
             {/* 用户菜单 */}

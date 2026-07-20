@@ -26,6 +26,17 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.4.1',
+    date: '2026-07-20',
+    changes: [
+      '优化：彻底移除顶部栏重复标题，只保留侧边栏 logo',
+      '优化：替换全新应用图标',
+      '优化：替换登录页背景图',
+      '优化：消极习惯独立统计图表，积极/消极并排对比展示',
+      '优化：主题墙删除按钮移至编辑弹窗内',
+    ]
+  },
+  {
     version: 'V1.4.0',
     date: '2026-07-20',
     changes: [
@@ -171,7 +182,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.4.0'
+        const currentVersion = '1.4.1'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -258,7 +269,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.4.0</span>
+            <span className="text-[#222] font-medium">V1.4.1</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
@@ -355,7 +366,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.4.0</span>
+          <span className="text-sm text-[#555]">当前版本 V1.4.1</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}

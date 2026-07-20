@@ -562,7 +562,7 @@ const HabitPage: React.FC = () => {
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <div className="text-xs text-[var(--text-secondary)]">{count}</div>
                       <div className="w-full bg-[var(--bg-primary)] rounded-t-sm relative" style={{ height: '100px' }}>
-                        <div className="absolute bottom-0 left-0 right-0 bg-primary-600 rounded-t-sm transition-all duration-500"
+                        <div className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-500 ${isPositive ? 'bg-primary-600' : 'bg-warning'}`}
                           style={{ height: `${(count / stats.weekDayMax) * 100}px` }} />
                       </div>
                       <span className="text-[10px] text-[var(--text-tertiary)]">{['日', '一', '二', '三', '四', '五', '六'][i]}</span>
@@ -578,7 +578,7 @@ const HabitPage: React.FC = () => {
                   {stats.monthlyTrend.map((m, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
                       <div className="w-full bg-[var(--bg-primary)] rounded-t-sm relative" style={{ height: '80px' }}>
-                        <div className="absolute bottom-0 left-0 right-0 bg-accent rounded-t-sm transition-all duration-500"
+                        <div className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all duration-500 ${isPositive ? 'bg-accent' : 'bg-warning'}`}
                           style={{ height: `${(m.count / stats.monthMax) * 80}px` }} title={`${m.label}: ${m.count}次`} />
                       </div>
                       <span className="text-[9px] text-[var(--text-tertiary)] whitespace-nowrap">{m.label.slice(5)}月</span>
@@ -594,16 +594,26 @@ const HabitPage: React.FC = () => {
                   {stats.last90Days.map((date, i) => {
                     const checked = stats.checkinMap.has(date)
                     return (
-                      <div key={i} className={`aspect-square rounded-sm ${checked ? 'bg-success' : 'bg-[var(--bg-primary)]'}`} title={date} />
+                      <div key={i} className={`aspect-square rounded-sm ${checked ? (isPositive ? 'bg-success' : 'bg-warning') : 'bg-[var(--bg-primary)]'}`} title={date} />
                     )
                   })}
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-[10px] text-[var(--text-tertiary)]">
                   <span>少</span>
                   <div className="w-3 h-3 bg-[var(--bg-primary)] rounded-sm" />
-                  <div className="w-3 h-3 bg-success/40 rounded-sm" />
-                  <div className="w-3 h-3 bg-success/70 rounded-sm" />
-                  <div className="w-3 h-3 bg-success rounded-sm" />
+                  {isPositive ? (
+                    <>
+                      <div className="w-3 h-3 bg-success/40 rounded-sm" />
+                      <div className="w-3 h-3 bg-success/70 rounded-sm" />
+                      <div className="w-3 h-3 bg-success rounded-sm" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-3 h-3 bg-warning/40 rounded-sm" />
+                      <div className="w-3 h-3 bg-warning/70 rounded-sm" />
+                      <div className="w-3 h-3 bg-warning rounded-sm" />
+                    </>
+                  )}
                   <span>多</span>
                 </div>
               </div>
