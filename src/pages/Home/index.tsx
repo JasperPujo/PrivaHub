@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore } from '@/store'
 import {
   CheckSquare, Calendar, Target, TrendingUp, StickyNote, Activity,
-  ArrowRight, Clock, Edit, X, Settings
+  ArrowRight, Clock, Edit, X, Settings, ChevronDown, Check
 } from '@/utils/icons'
 
 const container = {
@@ -41,6 +41,7 @@ const Home: React.FC = () => {
   const [now, setNow] = useState(new Date())
   const [noteDisplayIdx, setNoteDisplayIdx] = useState(0)
   const [showNoteSettings, setShowNoteSettings] = useState(false)
+  const [wallDropdownOpen, setWallDropdownOpen] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
@@ -345,35 +346,57 @@ const Home: React.FC = () => {
                 <p className="text-xs text-[var(--text-tertiary)] mt-1">范围 3 ~ 300 秒</p>
               </div>
 
-              {/* 主题墙选择 */}
+              {/* 主题墙选择 - 下拉多选 */}
               <div className="mb-2">
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">选择轮换的主题墙（可多选）</label>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">选择轮换的主题墙</label>
                 {activeWalls.length === 0 ? (
-                  <p className="text-sm text-[var(--text-tertiary)]">暂无主题墙</p>
+                  <p className="text-sm text-[var(--text-tertiary)]">暂无主题墙，请先在随心贴中创建</p>
                 ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {activeWalls.map(wall => {
-                      const isSelected = selectedWallIds.length === 0 || selectedWallIds.includes(wall.id)
-                      return (
-                        <label key={wall.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={e => {
-                              const next = e.target.checked
-                                ? [...selectedWallIds, wall.id]
-                                : selectedWallIds.filter(id => id !== wall.id)
-                              updateSettings({ homeNoteWallIds: next })
-                            }}
-                            className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
-                          />
-                          <span className="text-sm text-[var(--text-primary)]">{wall.name}</span>
-                          <span className="text-xs text-[var(--text-tertiary)] ml-auto">
-                            {notes.filter(n => n.wall_id === wall.id && !n.deleted_at).length} 张
-                          </span>
-                        </label>
-                      )
-                    })}
+                  <div className="relative">
+                    <button
+                      onClick={() => setWallDropdownOpen(!wallDropdownOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-primary-600/50 transition-colors text-sm text-left"
+                    >
+                      <span className={selectedWallIds.length === 0 ? 'text-[var(--text-tertiary)]' : 'text-[var(--text-primary)]'}>
+                        {selectedWallIds.length === 0 ? '全部主题墙' : `已选 ${selectedWallIds.length} 个主题墙`}
+                      </span>
+                      <ChevronDown size={14} className={`text-[var(--text-tertiary)] transition-transform ${wallDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {wallDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setWallDropdownOpen(false)} />
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          <label className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors border-b border-[var(--border-color)]">
+                            <input
+                              type="checkbox"
+                              checked={selectedWallIds.length === 0}
+                              onChange={() => { updateSettings({ homeNoteWallIds: [] }); }}
+                              className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
+                            />
+                            <span className="text-sm text-[var(--text-primary)]">全部主题墙</span>
+                          </label>
+                          {activeWalls.map(wall => (
+                            <label key={wall.id} className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedWallIds.includes(wall.id)}
+                                onChange={e => {
+                                  const next = e.target.checked
+                                    ? [...selectedWallIds, wall.id]
+                                    : selectedWallIds.filter(id => id !== wall.id)
+                                  updateSettings({ homeNoteWallIds: next })
+                                }}
+                                className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
+                              />
+                              <span className="text-sm text-[var(--text-primary)]">{wall.name}</span>
+                              <span className="text-xs text-[var(--text-tertiary)] ml-auto">
+                                {notes.filter(n => n.wall_id === wall.id && !n.deleted_at).length} 张
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

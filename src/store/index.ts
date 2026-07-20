@@ -118,6 +118,16 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           settings: { ...state.settings, ...newSettings }
         }))
+        // 异步保存到 Supabase
+        const user = get().user
+        if (user?.id) {
+          import('@/lib/supabase').then(({ supabase }) => {
+            const settings = get().settings
+            supabase.from('users').update({ settings }).eq('id', user.id).then(({ error }) => {
+              if (error) console.warn('[Store] Failed to save settings:', error.message)
+            })
+          })
+        }
       },
 
       // 模块

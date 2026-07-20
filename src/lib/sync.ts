@@ -117,6 +117,19 @@ export async function syncPush({ table, userId, data, idField = 'id', toDbRow }:
         return { success: false, error, table }
       }
 
+      // upsert 成功后，额外确保已删除记录的 deleted_at 被写入（upsert 可能因列缺失静默忽略）
+      const deletedRows = rows.filter(r => r.deleted_at)
+      if (deletedRows.length > 0) {
+        try {
+          await supabase.from(table).upsert(
+            deletedRows.map(r => ({ id: r.id, deleted_at: r.deleted_at, user_id: r.user_id, updated_at: r.updated_at })),
+            { onConflict: idField }
+          )
+        } catch (e) {
+          console.warn(`[Sync] Failed to explicitly sync deleted_at for table "${table}":`, e)
+        }
+      }
+
       return { success: true, count: rows.length }
     } catch (err: any) {
       const errMsg = err.message || String(err)
@@ -305,6 +318,24 @@ export async function fullSync(userId: string, stores: Record<string, {
       let pushResult: any = { success: true, count: 0 }
       if (dataToPush.length > 0) {
         pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
+      }
+
+      // 额外确保本地已删除记录同步到云端
+      const allLocalData = getData()
+      const deletedItems = allLocalData.filter((item: any) => item.deleted_at)
+      if (deletedItems.length > 0) {
+        try {
+          const deletedRows = deletedItems.map((item: any) => ({
+            id: item.id,
+            deleted_at: item.deleted_at,
+            user_id: userId,
+            updated_at: item.updated_at || new Date().toISOString(),
+          }))
+          await supabase.from(table).upsert(deletedRows, { onConflict: 'id' })
+          console.log(`[Sync] Explicitly synced ${deletedItems.length} deleted records for table "${table}"`)
+        } catch (e) {
+          console.warn(`[Sync] Failed to explicitly sync deleted records for table "${table}":`, e)
+        }
       }
 
       results[key] = { pull: pullResult, push: pushResult, mergedCount: dataToPush.length, table }

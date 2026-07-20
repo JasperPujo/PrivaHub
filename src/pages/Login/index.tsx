@@ -146,6 +146,12 @@ const Login: React.FC = () => {
       updated_at: new Date().toISOString()
     })
 
+    // 如果远端有 settings，合并到本地
+    if (userData?.settings && typeof userData.settings === 'object') {
+      const currentSettings = useAppStore.getState().settings
+      updateSettings({ ...currentSettings, ...userData.settings })
+    }
+
     // 保存登录信息
     localStorage.setItem('privahub_last_email', loginForm.username)
     localStorage.setItem('privahub_remember_password', String(loginForm.rememberPassword))

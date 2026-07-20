@@ -26,6 +26,17 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.5.0',
+    date: '2026-07-20',
+    changes: [
+      '修复：删除数据显式二次推送 deleted_at，确保删除状态写入数据库',
+      '修复：mergeRecords 删除状态优先，防止已删除记录被复活',
+      '新增：settings 同步到 Supabase，换设备登录自动恢复设置',
+      '优化：随心贴轮播主题墙选择改为下拉多选',
+      '优化：修复自动登录分支，用户名正确显示',
+    ]
+  },
+  {
     version: 'V1.4.4',
     date: '2026-07-20',
     changes: [
@@ -209,7 +220,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.4.4'
+        const currentVersion = '1.5.0'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -296,7 +307,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.4.3</span>
+            <span className="text-[#222] font-medium">V1.5.0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
