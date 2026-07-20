@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore } from '@/store'
 import {
   CheckSquare, Calendar, Target, TrendingUp, StickyNote, Activity,
-  ArrowRight, Clock, Edit, X, Settings, ChevronDown, Check
+  ArrowRight, Clock, Edit, X, Settings, ChevronDown, Check, Zap, BarChart2
 } from '@/utils/icons'
 
 const container = {
@@ -79,11 +79,25 @@ const Home: React.FC = () => {
     return () => clearInterval(timer)
   }, [activeNotes.length, noteRotationInterval])
 
-  const statCards = [
-    { title: '待办任务', count: tasks.filter(t => !t.is_completed && !t.deleted_at).length, icon: CheckSquare, path: '/todo', color: 'bg-primary-600' },
-    { title: '今日日程', count: todaySchedules.length, icon: Calendar, path: '/calendar', color: 'bg-accent' },
-    { title: '未落地规划', count: unscheduledPlans.length, icon: Target, path: '/plan', color: 'bg-warning' },
-  ]
+  // 今日习惯统计
+  const todayStr = new Date().toISOString().split('T')[0]
+  const activeHabits = habits.filter(h => !h.deleted_at)
+  const todayCheckedHabits = activeHabits.filter(h => h.checkins.some(c => c.date === todayStr))
+
+  // 本周完成率
+  const weekStart = new Date()
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
+  weekStart.setHours(0, 0, 0, 0)
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 6)
+  const weekSchedules = schedules.filter(s => {
+    if (s.deleted_at) return false
+    const d = new Date(s.start_time)
+    return d >= weekStart && d <= weekEnd
+  })
+  const weekTasks = tasks.filter(t => !t.deleted_at && t.is_completed && new Date(t.updated_at) >= weekStart)
+  const totalWeekItems = weekSchedules.length + tasks.filter(t => !t.deleted_at && new Date(t.created_at) >= weekStart).length
+  const completedWeekItems = weekTasks.length + weekSchedules.length
 
   return (
     <div className="page-container">
@@ -112,76 +126,68 @@ const Home: React.FC = () => {
           </h1>
         </motion.div>
 
-        {/* 统计卡片 */}
-        <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <button
-                key={card.title}
-                onClick={() => navigate(card.path)}
-                className="card-hover text-left group"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-button ${card.color} flex items-center justify-center`}>
-                    <Icon size={20} className="text-white" />
+        {/* 三栏：随心贴 + 待办 + 日程 */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* 随心贴轮播（大卡片） */}
+          <motion.div variants={item} className="lg:col-span-1">
+            <div className="card-hover text-left group relative overflow-hidden h-full min-h-[280px] flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-button bg-primary-100 flex items-center justify-center">
+                    <StickyNote size={20} className="text-primary-600" />
                   </div>
-                  <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
+                  <h2 className="text-base font-semibold text-[var(--text-primary)]">随心贴</h2>
                 </div>
-                <p className="text-2xl font-bold text-[var(--text-primary)]">{card.count}</p>
-                <p className="text-sm text-[var(--text-secondary)] mt-0.5">{card.title}</p>
-              </button>
-            )
-          })}
-          {/* 随心贴轮播卡片 */}
-          <div className="card-hover text-left group relative overflow-hidden">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-button bg-primary-100 flex items-center justify-center">
-                <StickyNote size={20} className="text-primary-600" />
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setShowNoteSettings(true)}
+                    className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors"
+                    title="轮播设置"
+                  >
+                    <Settings size={14} />
+                  </button>
+                  <button onClick={() => navigate('/notes')} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors">
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowNoteSettings(true) }}
-                  className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors"
-                  title="随心贴轮播设置"
-                >
-                  <Settings size={14} />
-                </button>
-                <button onClick={() => navigate('/notes')} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors">
-                  <ArrowRight size={16} />
-                </button>
-              </div>
+              {activeNotes.length > 0 ? (
+                <div className="flex-1 flex flex-col">
+                  <motion.div
+                    key={activeNotes[noteDisplayIdx]?.id || 'empty'}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex-1 flex flex-col justify-center"
+                  >
+                    <p className="text-sm font-medium text-[var(--text-primary)] whitespace-pre-wrap break-all leading-relaxed">
+                      {activeNotes[noteDisplayIdx].content || '空白贴纸'}
+                    </p>
+                  </motion.div>
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-color)]">
+                    <span className="text-xs text-[var(--text-tertiary)]">
+                      {noteWallMap.get(activeNotes[noteDisplayIdx].wall_id) || '未分类'}
+                    </span>
+                    <span className="text-xs text-[var(--text-tertiary)]">
+                      {new Date(activeNotes[noteDisplayIdx].created_at).toLocaleDateString('zh-CN')}
+                      {activeNotes.length > 1 && ` · ${noteDisplayIdx + 1}/${activeNotes.length}`}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <StickyNote size={32} className="text-[var(--text-tertiary)] mb-2" />
+                  <p className="text-sm text-[var(--text-tertiary)]">暂无随心贴</p>
+                  <button onClick={() => navigate('/notes')} className="text-xs text-primary-600 mt-2 hover:underline">
+                    去创建 →
+                  </button>
+                </div>
+              )}
             </div>
-            {activeNotes.length > 0 ? (
-              <motion.div
-                key={activeNotes[noteDisplayIdx]?.id || 'empty'}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="space-y-1"
-              >
-                <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-4 whitespace-pre-wrap min-h-[3.5rem]">
-                  {activeNotes[noteDisplayIdx].content || '空白贴纸'}
-                </p>
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  {noteWallMap.get(activeNotes[noteDisplayIdx].wall_id) || '未分类'}
-                  {' · '}
-                  {new Date(activeNotes[noteDisplayIdx].created_at).toLocaleDateString('zh-CN')}
-                  {activeNotes.length > 1 && ` · ${noteDisplayIdx + 1}/${activeNotes.length}`}
-                </p>
-              </motion.div>
-            ) : (
-              <div>
-                <p className="text-sm text-[var(--text-tertiary)]">暂无随心贴</p>
-                <p className="text-xs text-[var(--text-tertiary)] mt-1">点击创建第一张</p>
-              </div>
-            )}
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* 待办预览 */}
-          <motion.div variants={item} className="card shadow-card">
+          {/* 待办任务预览 */}
+          <motion.div variants={item} className="card shadow-card min-h-[280px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-0">待办任务</h2>
               <button onClick={() => navigate('/todo')} className="text-sm text-primary-600 hover:underline">
@@ -189,7 +195,7 @@ const Home: React.FC = () => {
               </button>
             </div>
             {pendingTasks.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2.5 flex-1">
                 {pendingTasks.map((task) => (
                   <div
                     key={task.id}
@@ -209,7 +215,7 @@ const Home: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="empty-state py-8">
+              <div className="empty-state py-8 flex-1 flex flex-col items-center justify-center">
                 <CheckSquare size={40} className="text-[var(--text-tertiary)] mb-2" />
                 <p className="text-sm">暂无待办任务</p>
               </div>
@@ -217,7 +223,7 @@ const Home: React.FC = () => {
           </motion.div>
 
           {/* 今日日程 */}
-          <motion.div variants={item} className="card shadow-card">
+          <motion.div variants={item} className="card shadow-card min-h-[280px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-0">今日日程</h2>
               <button onClick={() => navigate('/calendar')} className="text-sm text-primary-600 hover:underline">
@@ -225,7 +231,7 @@ const Home: React.FC = () => {
               </button>
             </div>
             {todaySchedules.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2.5 flex-1">
                 {todaySchedules.map((schedule) => (
                   <div
                     key={schedule.id}
@@ -240,12 +246,67 @@ const Home: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="empty-state py-8">
+              <div className="empty-state py-8 flex-1 flex flex-col items-center justify-center">
                 <Calendar size={40} className="text-[var(--text-tertiary)] mb-2" />
                 <p className="text-sm">今日暂无日程</p>
               </div>
             )}
           </motion.div>
+        </div>
+
+        {/* 下方信息卡片 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 未落地规划 */}
+          <button onClick={() => navigate('/plan')} className="card-hover text-left group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-button bg-warning flex items-center justify-center">
+                <Target size={20} className="text-white" />
+              </div>
+              <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{unscheduledPlans.length}</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">未落地规划</p>
+          </button>
+
+          {/* 今日习惯进度 */}
+          <button onClick={() => navigate('/habit')} className="card-hover text-left group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-button bg-success flex items-center justify-center">
+                <BarChart2 size={20} className="text-white" />
+              </div>
+              <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">
+              {todayCheckedHabits.length}/{activeHabits.length}
+            </p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日习惯进度</p>
+          </button>
+
+          {/* 本周总览 */}
+          <button onClick={() => navigate('/calendar')} className="card-hover text-left group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-button bg-accent flex items-center justify-center">
+                <Zap size={20} className="text-white" />
+              </div>
+              <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">
+              {totalWeekItems > 0 ? Math.round(completedWeekItems / totalWeekItems * 100) : 0}%
+            </p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">本周完成率</p>
+          </button>
+
+          {/* 快速记录 */}
+          <button onClick={() => navigate('/tracker')} className="card-hover text-left group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-button bg-primary-600 flex items-center justify-center">
+                <Activity size={20} className="text-white" />
+              </div>
+              <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
+            </div>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">记录</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">实时数据追踪</p>
+          </button>
         </div>
 
         {/* 快捷操作 */}

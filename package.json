@@ -1,6 +1,6 @@
 {
   "name": "privahub",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "PrivaHub - 您的私人工作台",
   "main": "dist-electron/main.js",
   "scripts": {
