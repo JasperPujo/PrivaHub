@@ -2,6 +2,9 @@
 
 // 通用同步工具：将本地数据同步到 Supabase
 
+/** 同步锁，防止并发同步导致数据冲突 */
+let isSyncing = false
+
 interface SyncOptions {
   table: string
   userId: string
@@ -19,6 +22,10 @@ interface SyncOptions {
 function mergeRecords(local: any, remote: any): any {
   if (!local) return remote
   if (!remote) return local
+  // 删除状态优先：任意一方已删除，保留已删除状态（防止已删除记录被复活）
+  if (local.deleted_at || remote.deleted_at) {
+    return local.deleted_at ? local : remote
+  }
   const localTime = local.updated_at || local.created_at || '1970-01-01'
   const remoteTime = remote.updated_at || remote.created_at || '1970-01-01'
   // 本地时间 >= 远程时间时保留本地（相等时优先保留本地最新操作）
@@ -243,6 +250,13 @@ export async function fullSync(userId: string, stores: Record<string, {
   toDbRow?: (item: any) => any
   fromDbRow?: (row: any) => any
 }>, options?: { since?: string | null; parallel?: boolean }) {
+  // 同步锁：防止并发同步导致数据冲突
+  if (isSyncing) {
+    console.log('[Sync] Another sync is in progress, skipping')
+    return {}
+  }
+  isSyncing = true
+
   const since = options?.since || null
   const useParallel = options?.parallel !== false
 
@@ -300,14 +314,18 @@ export async function fullSync(userId: string, stores: Record<string, {
     }
   }
 
-  if (useParallel) {
-    // 并行同步所有表
-    await Promise.all(Object.entries(stores).map(syncOne))
-  } else {
-    // 串行同步
-    for (const entry of Object.entries(stores)) {
-      await syncOne(entry)
+  try {
+    if (useParallel) {
+      // 并行同步所有表
+      await Promise.all(Object.entries(stores).map(syncOne))
+    } else {
+      // 串行同步
+      for (const entry of Object.entries(stores)) {
+        await syncOne(entry)
+      }
     }
+  } finally {
+    isSyncing = false
   }
 
   return results
