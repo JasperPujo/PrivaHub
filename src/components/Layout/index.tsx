@@ -298,7 +298,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                   </div>
                 )}
                 <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {user?.name || user?.username || '用户'}
+                  {user?.username || '用户'}
                 </span>
               </button>
 

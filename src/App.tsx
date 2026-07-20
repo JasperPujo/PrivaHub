@@ -88,7 +88,7 @@ function App() {
       return
       // 以下代码保留但不执行
       const { data: { session } } = await supabase.auth.getSession()
-      if (false && session?.user) {
+      if (session?.user) {
         const { data: userData } = await supabase
           .from('users')
           .select('*')
@@ -100,21 +100,19 @@ function App() {
           setUser({
             id: userData.id,
             email: userData.email,
-            name: userData.name,
+            username: userData.username || userData.name || session.user.email?.split('@')[0] || '',
             avatar: userData.avatar || cachedAvatar || null,
-            role: userData.role || 'user',
             created_at: userData.created_at,
             updated_at: userData.updated_at,
           })
         } else {
           // public.users 表中没有记录，自动创建
+          const userName = session.user.user_metadata?.name || session.user.email?.split('@')[0] || ''
           const newUser = {
             id: session.user.id,
             email: session.user.email || '',
-            username: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
+            username: userName,
             avatar: session.user.user_metadata?.avatar || cachedAvatar || null,
-            role: 'user',
             created_at: session.user.created_at,
             updated_at: session.user.updated_at || session.user.created_at,
           }
@@ -127,9 +125,8 @@ function App() {
           setUser({
             id: newUser.id,
             email: newUser.email,
-            name: newUser.name,
+            username: newUser.username,
             avatar: newUser.avatar,
-            role: newUser.role,
             created_at: newUser.created_at,
             updated_at: newUser.updated_at,
           })

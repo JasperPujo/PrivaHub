@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import {
   Moon, Lock, Unlock, Bell, Volume2, VolumeX,
-  ChevronRight, LogOut, User, Clock, Info, Edit
+  ChevronRight, LogOut, User, Clock, Info, Edit, StickyNote
 } from '@/utils/icons'
 
 const SettingsPage: React.FC = () => {

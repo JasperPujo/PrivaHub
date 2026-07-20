@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore } from '@/store'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore } from '@/store'
 import {
   CheckSquare, Calendar, Target, TrendingUp, StickyNote, Activity,
-  ArrowRight, Clock, Edit, X
+  ArrowRight, Clock, Edit, X, Settings
 } from '@/utils/icons'
 
 const container = {
@@ -36,8 +36,11 @@ const Home: React.FC = () => {
   const { schedules } = useScheduleStore()
   const { plans } = usePlanStore()
   const { habits } = useHabitStore()
+  const { notes, walls } = useNoteStore()
   const [editShortcuts, setEditShortcuts] = useState(false)
   const [now, setNow] = useState(new Date())
+  const [noteDisplayIdx, setNoteDisplayIdx] = useState(0)
+  const [showNoteSettings, setShowNoteSettings] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
@@ -55,17 +58,30 @@ const Home: React.FC = () => {
   }).slice(0, 5)
 
   const unscheduledPlans = plans.filter(p => !p.is_scheduled && !p.deleted_at).slice(0, 3)
-  const todayHabits = habits.filter(h => {
-    if (h.deleted_at) return false
-    const today = new Date().toISOString().split('T')[0]
-    return !h.checkins.find(c => c.date === today)
-  }).slice(0, 3)
+
+  // 随心贴轮播配置
+  const selectedWallIds: string[] = settings.homeNoteWallIds || []
+  const noteRotationInterval = settings.noteRotationInterval || 8
+  const activeWalls = walls.filter(w => !w.deleted_at)
+  const activeNotes = notes.filter(n => {
+    if (n.deleted_at) return false
+    if (selectedWallIds.length === 0) return true
+    return selectedWallIds.includes(n.wall_id)
+  })
+  const noteWallMap = new Map(activeWalls.map(w => [w.id, w.name]))
+
+  useEffect(() => {
+    if (activeNotes.length <= 1) return
+    const timer = setInterval(() => {
+      setNoteDisplayIdx(prev => (prev + 1) % activeNotes.length)
+    }, noteRotationInterval * 1000)
+    return () => clearInterval(timer)
+  }, [activeNotes.length, noteRotationInterval])
 
   const statCards = [
     { title: '待办任务', count: tasks.filter(t => !t.is_completed && !t.deleted_at).length, icon: CheckSquare, path: '/todo', color: 'bg-primary-600' },
     { title: '今日日程', count: todaySchedules.length, icon: Calendar, path: '/calendar', color: 'bg-accent' },
     { title: '未落地规划', count: unscheduledPlans.length, icon: Target, path: '/plan', color: 'bg-warning' },
-    { title: '待打卡习惯', count: todayHabits.length, icon: TrendingUp, path: '/habit', color: 'bg-success' },
   ]
 
   return (
@@ -116,6 +132,50 @@ const Home: React.FC = () => {
               </button>
             )
           })}
+          {/* 随心贴轮播卡片 */}
+          <div className="card-hover text-left group relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-button bg-primary-100 flex items-center justify-center">
+                <StickyNote size={20} className="text-primary-600" />
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowNoteSettings(true) }}
+                  className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors"
+                  title="随心贴轮播设置"
+                >
+                  <Settings size={14} />
+                </button>
+                <button onClick={() => navigate('/notes')} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors">
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+            {activeNotes.length > 0 ? (
+              <motion.div
+                key={activeNotes[noteDisplayIdx]?.id || 'empty'}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-1"
+              >
+                <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-4 whitespace-pre-wrap min-h-[3.5rem]">
+                  {activeNotes[noteDisplayIdx].content || '空白贴纸'}
+                </p>
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  {noteWallMap.get(activeNotes[noteDisplayIdx].wall_id) || '未分类'}
+                  {' · '}
+                  {new Date(activeNotes[noteDisplayIdx].created_at).toLocaleDateString('zh-CN')}
+                  {activeNotes.length > 1 && ` · ${noteDisplayIdx + 1}/${activeNotes.length}`}
+                </p>
+              </motion.div>
+            ) : (
+              <div>
+                <p className="text-sm text-[var(--text-tertiary)]">暂无随心贴</p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">点击创建第一张</p>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -245,6 +305,82 @@ const Home: React.FC = () => {
           )}
         </motion.div>
       </motion.div>
+
+      {/* 随心贴轮播设置弹窗 */}
+      <AnimatePresence>
+        {showNoteSettings && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setShowNoteSettings(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[var(--bg-primary)] rounded-2xl shadow-xl w-full max-w-md mx-4 p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-semibold text-[var(--text-primary)]">随心贴轮播设置</h3>
+                <button onClick={() => setShowNoteSettings(false)} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)]">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 轮播间隔 */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">轮播间隔（秒）</label>
+                <input
+                  type="number"
+                  min={3}
+                  max={300}
+                  value={settings.noteRotationInterval || 8}
+                  onChange={e => updateSettings({ noteRotationInterval: Math.max(3, Math.min(300, parseInt(e.target.value) || 8)) })}
+                  className="input w-24"
+                />
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">范围 3 ~ 300 秒</p>
+              </div>
+
+              {/* 主题墙选择 */}
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">选择轮换的主题墙（可多选）</label>
+                {activeWalls.length === 0 ? (
+                  <p className="text-sm text-[var(--text-tertiary)]">暂无主题墙</p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {activeWalls.map(wall => {
+                      const isSelected = selectedWallIds.length === 0 || selectedWallIds.includes(wall.id)
+                      return (
+                        <label key={wall.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={e => {
+                              const next = e.target.checked
+                                ? [...selectedWallIds, wall.id]
+                                : selectedWallIds.filter(id => id !== wall.id)
+                              updateSettings({ homeNoteWallIds: next })
+                            }}
+                            className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
+                          />
+                          <span className="text-sm text-[var(--text-primary)]">{wall.name}</span>
+                          <span className="text-xs text-[var(--text-tertiary)] ml-auto">
+                            {notes.filter(n => n.wall_id === wall.id && !n.deleted_at).length} 张
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

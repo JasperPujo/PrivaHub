@@ -19,7 +19,7 @@ const HabitStatsPage: React.FC = () => {
   const stats = useMemo(() => {
     const positiveHabits = filteredHabits.filter(h => h.type === 'positive')
 
-    // 总打卡次数
+    // 总记录次数
     const totalCheckIns = filteredHabits.reduce((sum, h) => sum + h.checkins.length, 0)
 
     // 当前连续天数（取所有积极习惯中最大的当前连续值）
@@ -89,7 +89,7 @@ const HabitStatsPage: React.FC = () => {
       last30DaysRateData.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, value: rate })
     }
 
-    // 近30天每日打卡总数趋势（面积图）
+    // 近30天每日记录总数趋势（面积图）
     const last30DaysData: { date: string; value: number }[] = []
     for (let i = 29; i >= 0; i--) {
       const d = new Date()
@@ -99,7 +99,7 @@ const HabitStatsPage: React.FC = () => {
       last30DaysData.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, value: count })
     }
 
-    // 每周打卡次数对比（BarChart - 使用 StatsCard type='bar'）
+    // 每周记录次数对比（BarChart - 使用 StatsCard type='bar'）
     const weeklyData: { date: string; value: number }[] = []
     for (let i = 7; i >= 0; i--) {
       const weekEnd = new Date()
@@ -232,32 +232,32 @@ const HabitStatsPage: React.FC = () => {
 
             {/* 4个汇总卡片 */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <SummaryCard label="总打卡次数" value={stats.totalCheckIns} />
+              <SummaryCard label="总记录次数" value={stats.totalCheckIns} />
               <SummaryCard label="当前连续天数" value={stats.currentStreak} sub="当前连续" />
               <SummaryCard label="最长连续天数" value={stats.maxStreak} />
               <SummaryCard label="平均完成率" value={`${stats.completionRate}%`} />
             </div>
 
-            {/* 近30天打卡趋势（面积图） */}
-            <AreaChart title="近30天打卡趋势" data={stats.last30DaysData} />
+            {/* 近30天记录趋势（面积图） */}
+            <AreaChart title="近30天记录趋势" data={stats.last30DaysData} />
 
             {/* 近30天每日完成率趋势（纯折线图） */}
             <LineChart title="近30天每日完成率趋势" data={stats.last30DaysRateData} color="#6B4C9A" />
 
-            {/* 每周打卡次数对比（BarChart） */}
-            <StatsCard title="每周打卡次数对比" data={stats.weeklyData} type="bar" />
+            {/* 每周记录次数对比（BarChart） */}
+            <StatsCard title="每周记录次数对比" data={stats.weeklyData} type="bar" />
 
             {/* 积极习惯 / 消极习惯 雷达图 */}
             {stats.positiveRadar && stats.negativeRadar ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <RadarChart
-                  title="积极习惯打卡情况"
+                  title="积极习惯记录情况"
                   indicators={stats.positiveRadar.indicators}
                   data={stats.positiveRadar.data}
                   color="#22c55e"
                 />
                 <RadarChart
-                  title="消极习惯打卡情况"
+                  title="消极习惯记录情况"
                   indicators={stats.negativeRadar.indicators}
                   data={stats.negativeRadar.data}
                   color="#f97316"
@@ -265,14 +265,14 @@ const HabitStatsPage: React.FC = () => {
               </div>
             ) : stats.positiveRadar ? (
               <RadarChart
-                title="积极习惯打卡情况"
+                title="积极习惯记录情况"
                 indicators={stats.positiveRadar.indicators}
                 data={stats.positiveRadar.data}
                 color="#22c55e"
               />
             ) : stats.negativeRadar ? (
               <RadarChart
-                title="消极习惯打卡情况"
+                title="消极习惯记录情况"
                 indicators={stats.negativeRadar.indicators}
                 data={stats.negativeRadar.data}
                 color="#f97316"

@@ -645,7 +645,7 @@ const HabitPage: React.FC = () => {
               {/* 半年归档提醒 */}
               {habit.checkins.length > 180 && (
                 <div className="bg-warning/10 text-warning text-xs p-3 rounded-button mt-4">
-                  您已有 {habit.checkins.length} 条打卡记录，建议归档半年前的记录以保持应用流畅。超过 365 天的记录将无法继续记录。
+                  您已有 {habit.checkins.length} 条记录，建议归档半年前的记录以保持应用流畅。超过 365 天的记录将无法继续记录。
                 </div>
               )}
             </div>

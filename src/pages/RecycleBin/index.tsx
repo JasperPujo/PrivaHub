@@ -57,7 +57,7 @@ const RecycleBin: React.FC = () => {
     task: '任务待办',
     schedule: '日历日程',
     plan: '宏观规划',
-    habit: '习惯打卡',
+    habit: '习惯记录',
     note: '随心贴',
     note_wall: '主题墙'
   }

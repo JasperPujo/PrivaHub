@@ -26,6 +26,15 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.4.4',
+    date: '2026-07-20',
+    changes: [
+      '优化：主页新增随心贴轮播卡片，替代原习惯统计卡片',
+      '新增：随心贴轮播支持齿轮按钮设置（秒数输入 + 主题墙多选）',
+      '优化：轮播卡片显示4行内容、记录时间、主题墙名称',
+    ]
+  },
+  {
     version: 'V1.4.3',
     date: '2026-07-20',
     changes: [
@@ -200,7 +209,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.4.3'
+        const currentVersion = '1.4.4'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -384,7 +393,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.4.3</span>
+          <span className="text-sm text-[#555]">当前版本 V1.4.4</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
