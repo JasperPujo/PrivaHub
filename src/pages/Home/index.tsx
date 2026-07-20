@@ -66,7 +66,7 @@ const Home: React.FC = () => {
   const activeWalls = walls.filter(w => !w.deleted_at)
   const activeNotes = notes.filter(n => {
     if (n.deleted_at) return false
-    if (selectedWallIds.length === 0) return true
+    if (selectedWallIds.length === 0) return false // 不选 = 不轮播
     return selectedWallIds.includes(n.wall_id)
   })
   const noteWallMap = new Map(activeWalls.map(w => [w.id, w.name]))
@@ -358,7 +358,7 @@ const Home: React.FC = () => {
                       className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-primary-600/50 transition-colors text-sm text-left"
                     >
                       <span className={selectedWallIds.length === 0 ? 'text-[var(--text-tertiary)]' : 'text-[var(--text-primary)]'}>
-                        {selectedWallIds.length === 0 ? '全部主题墙' : `已选 ${selectedWallIds.length} 个主题墙`}
+                        {selectedWallIds.length === 0 ? '未选择' : selectedWallIds.length === activeWalls.length ? '全部主题墙' : `已选 ${selectedWallIds.length} 个主题墙`}
                       </span>
                       <ChevronDown size={14} className={`text-[var(--text-tertiary)] transition-transform ${wallDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
@@ -369,8 +369,10 @@ const Home: React.FC = () => {
                           <label className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors border-b border-[var(--border-color)]">
                             <input
                               type="checkbox"
-                              checked={selectedWallIds.length === 0}
-                              onChange={() => { updateSettings({ homeNoteWallIds: [] }); }}
+                              checked={selectedWallIds.length === activeWalls.length}
+                              onChange={e => {
+                                updateSettings({ homeNoteWallIds: e.target.checked ? activeWalls.map(w => w.id) : [] })
+                              }}
                               className="w-4 h-4 rounded border-[var(--border-color)] text-primary-600 focus:ring-primary-600"
                             />
                             <span className="text-sm text-[var(--text-primary)]">全部主题墙</span>
@@ -399,6 +401,7 @@ const Home: React.FC = () => {
                     )}
                   </div>
                 )}
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">不选则不显示轮播卡片</p>
               </div>
             </motion.div>
           </motion.div>
