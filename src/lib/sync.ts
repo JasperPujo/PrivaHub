@@ -259,28 +259,13 @@ export async function fullSync(userId: string, stores: Record<string, {
     const { table, getData, setData, toDbRow, fromDbRow } = store
     try {
       // 1. 获取本地数据
-      const localData = getData()
+      let localData = getData()
 
-      // 2. 计算需要推送的数据（增量模式下只推送本地更新过的数据）
-      let dataToPush = localData
-      if (effectiveSince) {
-        dataToPush = localData.filter((item: any) => {
-          const t = item.updated_at || item.created_at || ''
-          return t > effectiveSince
-        })
-      }
-
-      // 3. 先推送本地变更到云端（确保本地修改优先被保存，避免被后续 pull 的远程旧数据覆盖）
-      let pushResult: any = { success: true, count: 0 }
-      if (dataToPush.length > 0) {
-        pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
-      }
-
-      // 4. 拉取远程数据（增量或全量）
+      // 2. 拉取远程数据（增量或全量）
       const pullResult = await syncPull(table, userId, fromDbRow, effectiveSince)
       const remoteData = pullResult.success ? pullResult.data : []
 
-      // 5. 合并远程数据到本地（基于 updated_at 冲突解决，本地 >= 远程时保留本地）
+      // 3. 合并远程数据到本地（基于 updated_at 冲突解决，本地 >= 远程时保留本地）
       if (remoteData.length > 0) {
         const localMap = new Map(localData.map((item: any) => [item.id, item]))
         for (const item of remoteData) {
@@ -289,8 +274,23 @@ export async function fullSync(userId: string, stores: Record<string, {
           const merged = mergeRecords(existing, item)
           localMap.set(item.id, merged)
         }
-        const mergedData = Array.from(localMap.values())
-        setData(mergedData)
+        localData = Array.from(localMap.values())
+        setData(localData)
+      }
+
+      // 4. 计算需要推送的数据（增量模式下只推送本地更新过的数据）
+      let dataToPush = localData
+      if (effectiveSince) {
+        dataToPush = localData.filter((item: any) => {
+          const t = item.updated_at || item.created_at || ''
+          return t > effectiveSince
+        })
+      }
+
+      // 5. 推送到远程（增量模式下只推送变化的数据）
+      let pushResult: any = { success: true, count: 0 }
+      if (dataToPush.length > 0) {
+        pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
       }
 
       results[key] = { pull: pullResult, push: pushResult, mergedCount: dataToPush.length, table }
