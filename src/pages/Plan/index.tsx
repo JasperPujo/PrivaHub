@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react'
-import { usePlanStore, useTodoStore, useScheduleStore, useRecycleBinStore } from '@/store'
+import { usePlanStore, useTodoStore, useScheduleStore, useRecycleBinStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -12,6 +12,7 @@ import { generateUUID } from '@/lib/utils'
 
 const PlanPage: React.FC = () => {
   const { plans, addPlan, updatePlan, deletePlan } = usePlanStore()
+  const { user } = useAppStore()
   const { addItem } = useRecycleBinStore()
   const { addTask } = useTodoStore()
   const { addSchedule } = useScheduleStore()
@@ -61,7 +62,7 @@ const PlanPage: React.FC = () => {
     } else {
       addPlan({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         ...saveData,
         is_scheduled: false,
         scheduled_to: null,
@@ -86,7 +87,7 @@ const PlanPage: React.FC = () => {
       const now = new Date()
       addTask({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         title: plan.title,
         content: plan.content || '',
         priority: plan.priority || 'medium',
@@ -123,7 +124,7 @@ const PlanPage: React.FC = () => {
     const now = new Date()
     addSchedule({
       id: generateUUID(),
-      user_id: 'current-user',
+      user_id: user?.id || 'current-user',
       title: plan.title,
       content: plan.content || '',
       start_time: startISO,

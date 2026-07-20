@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react'
-import { useTodoStore, useRecycleBinStore } from '@/store'
+import { useTodoStore, useRecycleBinStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -16,6 +16,7 @@ const Todo: React.FC = () => {
     tasks, archivedTasks, addTask, updateTask, deleteTask,
     archiveTask, unarchiveTask, exportArchived, clearOldArchived
   } = useTodoStore()
+  const { user } = useAppStore()
   const { addItem } = useRecycleBinStore()
   const [showAddModal, setShowAddModal] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
@@ -72,7 +73,7 @@ const Todo: React.FC = () => {
     } else {
       addTask({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         title: form.title,
         content: form.content,
         priority: form.priority,

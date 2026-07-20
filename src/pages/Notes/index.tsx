@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { useNoteStore } from '@/store'
+import { useNoteStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -21,6 +21,7 @@ const canEditNote = (note: Note) => {
 
 const NotesPage: React.FC = () => {
   const { walls, notes, addWall, updateWall, deleteWall, reorderWalls, addNote, updateNote, deleteNote, pinNote, reorderNotes, addComment, deleteComment } = useNoteStore()
+  const { user } = useAppStore()
   // 默认展示第一个主题墙
   const defaultWallId = walls.filter(w => !w.deleted_at).sort((a, b) => a.sort_order - b.sort_order)[0]?.id || null
   const [activeWallId, setActiveWallId] = useState<string | null>(defaultWallId)
@@ -79,7 +80,7 @@ const NotesPage: React.FC = () => {
     } else {
       const newWall: NoteWall = {
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         name: wallForm.name,
         description: wallForm.description,
         sort_order: walls.filter(w => !w.deleted_at).length,
@@ -108,7 +109,7 @@ const NotesPage: React.FC = () => {
     } else {
       addNote({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         wall_id: activeWallId,
         content: { text: noteForm.content },
         image_ids: noteForm.images,
@@ -495,6 +496,12 @@ const NotesPage: React.FC = () => {
                     className="btn-secondary text-sm"
                   >
                     编辑墙信息
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteWall(activeWall.id)}
+                    className="text-sm text-[var(--text-tertiary)] hover:text-danger transition-colors"
+                  >
+                    删除
                   </button>
                   <button
                     onClick={() => { resetNoteForm(); setShowNoteModal(true) }}

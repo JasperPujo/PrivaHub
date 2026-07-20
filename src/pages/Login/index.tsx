@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useAppStore } from '@/store'
+import { useAppStore, clearAllDataStores } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Lock, Eye, EyeOff } from '@/utils/icons'
 import type { LoginForm, RegisterForm } from '@/types'
@@ -133,6 +133,9 @@ const Login: React.FC = () => {
     // 从 localStorage 读取备用头像
     const cachedAvatar = localStorage.getItem('user_avatar_' + data.user.id)
 
+    // 切换账号：清除旧账号的本地数据
+    clearAllDataStores()
+
     setUser({
       id: data.user.id,
       name: userData?.name || userData?.username || loginForm.username.split('@')[0],
@@ -203,6 +206,9 @@ const Login: React.FC = () => {
         console.log('users insert error:', insertError)
 
         if (data.session) {
+          // 切换账号：清除旧账号的本地数据
+          clearAllDataStores()
+
           setUser({
             id: userId,
             username: registerForm.username,
@@ -211,18 +217,18 @@ const Login: React.FC = () => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
-          alert('注册成功，已自动登录')
+          addNotification({ message: '注册成功，已自动登录', type: 'success' })
         } else {
-          addNotification({ message: '注册成功，请登录', type: 'success' })
+          addNotification({ message: '注册成功，请查看邮箱验证后登录', type: 'success' })
           setLoginForm(prev => ({ ...prev, username: registerForm.email }))
           setMode('login')
         }
       } else {
-        alert('注册请求已发送，但未收到用户ID，请检查 Supabase 配置')
+        addNotification({ message: '注册请求已发送，但未收到用户ID，请检查 Supabase 配置', type: 'error' })
       }
     } catch (e: any) {
       console.error('Register exception:', e)
-      alert('注册出错：' + (e.message || '未知错误'))
+      addNotification({ message: '注册出错：' + (e.message || '未知错误'), type: 'error' })
     }
 
     setIsSubmitting(false)

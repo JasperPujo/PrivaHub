@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo } from 'react'
-import { useScheduleStore, usePlanStore, useRecycleBinStore, useTodoStore } from '@/store'
+import { useScheduleStore, usePlanStore, useRecycleBinStore, useTodoStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -35,6 +35,7 @@ const scheduleColors = [
 
 const CalendarPage: React.FC = () => {
   const { schedules, addSchedule, updateSchedule, deleteSchedule } = useScheduleStore()
+  const { user } = useAppStore()
   const { plans } = usePlanStore()
   const { addItem } = useRecycleBinStore()
   const { tasks, updateTask } = useTodoStore()
@@ -215,7 +216,7 @@ const CalendarPage: React.FC = () => {
       updateSchedule(editingSchedule.id, payload)
     } else {
       addSchedule({
-        id: generateUUID(), user_id: 'current-user', ...payload,
+        id: generateUUID(), user_id: user?.id || 'current-user', ...payload,
         deleted_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

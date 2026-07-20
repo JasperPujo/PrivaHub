@@ -1,6 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrackerStore } from '@/store'
+import { useTrackerStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -32,6 +32,7 @@ const defaultColors = ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6', '#
 const TrackerPage: React.FC = () => {
   const navigate = useNavigate()
   const { categories, entries, addCategory, updateCategory, deleteCategory, addEntry, deleteEntry } = useTrackerStore()
+  const { user } = useAppStore()
 
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<TrackerCategory | null>(null)
@@ -110,7 +111,7 @@ const TrackerPage: React.FC = () => {
     } else {
       addCategory({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         name: form.name,
         icon: form.icon,
         color: form.color,
@@ -127,7 +128,7 @@ const TrackerPage: React.FC = () => {
   const handleQuickRecord = (categoryId: string) => {
     addEntry({
       id: generateUUID(),
-      user_id: 'current-user',
+      user_id: user?.id || 'current-user',
       category_id: categoryId,
       timestamp: new Date().toISOString(),
       note: '',
@@ -149,7 +150,7 @@ const TrackerPage: React.FC = () => {
     if (!entryCategoryId || !entryTimestamp) return
     addEntry({
       id: generateUUID(),
-      user_id: 'current-user',
+      user_id: user?.id || 'current-user',
       category_id: entryCategoryId,
       timestamp: new Date(entryTimestamp).toISOString(),
       note: entryNote,

@@ -256,6 +256,7 @@ interface TodoState {
   exportArchived: () => string
   clearOldArchived: () => void
   addTag: (tag: Tag) => void
+  clearData: () => void
 }
 
 export const useTodoStore = create<TodoState>()(
@@ -313,6 +314,7 @@ export const useTodoStore = create<TodoState>()(
         }
       }),
       addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
+      clearData: () => set({ tasks: [], archivedTasks: [], tags: [] }),
     }),
     {
       name: 'private-workbench-todo',
@@ -327,6 +329,7 @@ interface ScheduleState {
   addSchedule: (schedule: Schedule) => void
   updateSchedule: (id: string, schedule: Partial<Schedule>) => void
   deleteSchedule: (id: string) => void
+  clearData: () => void
 }
 
 export const useScheduleStore = create<ScheduleState>()(
@@ -341,6 +344,7 @@ export const useScheduleStore = create<ScheduleState>()(
       deleteSchedule: (id) => set((state) => ({
         schedules: state.schedules.map(s => s.id === id ? { ...s, deleted_at: new Date().toISOString() } : s)
       })),
+      clearData: () => set({ schedules: [] }),
     }),
     {
       name: 'private-workbench-schedule',
@@ -357,6 +361,7 @@ interface PlanState {
   updatePlan: (id: string, plan: Partial<Plan>) => void
   deletePlan: (id: string) => void
   addTag: (tag: Tag) => void
+  clearData: () => void
 }
 
 export const usePlanStore = create<PlanState>()(
@@ -373,6 +378,7 @@ export const usePlanStore = create<PlanState>()(
         plans: state.plans.map(p => p.id === id ? { ...p, deleted_at: new Date().toISOString() } : p)
       })),
       addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
+      clearData: () => set({ plans: [], tags: [] }),
     }),
     {
       name: 'private-workbench-plan',
@@ -389,6 +395,7 @@ interface HabitState {
   deleteHabit: (id: string) => void
   checkin: (id: string, date: string, note: string) => void
   uncheckin: (id: string, date: string) => void
+  clearData: () => void
 }
 
 export const useHabitStore = create<HabitState>()(
@@ -427,6 +434,7 @@ export const useHabitStore = create<HabitState>()(
           }
         })
       })),
+      clearData: () => set({ habits: [] }),
     }),
     {
       name: 'private-workbench-habit',
@@ -452,6 +460,7 @@ interface NoteState {
   reorderNotes: (wallId: string, noteIds: string[]) => void
   addComment: (noteId: string, comment: { id: string; text: string; created_at: string }) => void
   deleteComment: (noteId: string, commentId: string) => void
+  clearData: () => void
 }
 
 export const useNoteStore = create<NoteState>()(
@@ -514,6 +523,7 @@ export const useNoteStore = create<NoteState>()(
           return { ...n, comments: n.comments.filter(c => c.id !== commentId), updated_at: new Date().toISOString() }
         })
       })),
+      clearData: () => set({ walls: [], notes: [] }),
     }),
     {
       name: 'private-workbench-note',
@@ -528,6 +538,7 @@ interface RecycleBinState {
   restoreItem: (id: string) => void
   permanentDelete: (id: string) => void
   clearExpired: () => void
+  clearData: () => void
 }
 
 export const useRecycleBinStore = create<RecycleBinState>()(
@@ -549,6 +560,7 @@ export const useRecycleBinStore = create<RecycleBinState>()(
           items: state.items.filter(item => item.deleted_at > sevenDaysAgo)
         }))
       },
+      clearData: () => set({ items: [] }),
     }),
     {
       name: 'private-workbench-recycle',
@@ -568,6 +580,7 @@ interface TrackerState {
   deleteCategory: (id: string) => void
   addEntry: (entry: TrackerEntry) => void
   deleteEntry: (id: string) => void
+  clearData: () => void
 }
 
 export const useTrackerStore = create<TrackerState>()(
@@ -586,8 +599,9 @@ export const useTrackerStore = create<TrackerState>()(
       })),
       addEntry: (entry) => set((state) => ({ entries: [entry, ...state.entries] })),
       deleteEntry: (id) => set((state) => ({
-        entries: state.entries.filter(e => e.id !== id)
+        entries: state.entries.map(e => e.id === id ? { ...e, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } : e)
       })),
+      clearData: () => set({ categories: [], entries: [] }),
     }),
     {
       name: 'private-workbench-tracker',
@@ -595,5 +609,47 @@ export const useTrackerStore = create<TrackerState>()(
     }
   )
 )
+
+// ---- 切换账号时清除所有本地数据 ----
+const STORE_KEYS = [
+  'private-workbench-store',
+  'private-workbench-todo',
+  'private-workbench-schedule',
+  'private-workbench-plan',
+  'private-workbench-habit',
+  'private-workbench-note',
+  'private-workbench-recycle',
+  'private-workbench-tracker',
+]
+
+export function clearAllDataStores() {
+  // 清除除了 app store 以外的所有数据 store（app store 保留主题、设置等）
+  // 但需要重置 lastSyncTime
+  STORE_KEYS.forEach(key => {
+    if (key === 'private-workbench-store') {
+      const existing = localStorage.getItem(key)
+      if (existing) {
+        try {
+          const parsed = JSON.parse(existing)
+          // 保留主题、设置、模块配置，但清除 user/isLoggedIn、lastSyncTime
+          delete parsed.state?.user
+          delete parsed.state?.isLoggedIn
+          delete parsed.state?.lastSyncTime
+          localStorage.setItem(key, JSON.stringify(parsed))
+        } catch { /* ignore */ }
+      }
+    } else {
+      localStorage.removeItem(key)
+    }
+  })
+  // 同时清除内存中的状态（避免 zustand 从内存中保留旧数据）
+  useTodoStore.getState().clearData()
+  useScheduleStore.getState().clearData()
+  usePlanStore.getState().clearData()
+  useHabitStore.getState().clearData()
+  useNoteStore.getState().clearData()
+  useRecycleBinStore.getState().clearData()
+  useTrackerStore.getState().clearData()
+}
 
 

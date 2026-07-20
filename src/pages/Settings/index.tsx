@@ -3,9 +3,10 @@ import { useAppStore } from '@/store'
 import { motion } from 'framer-motion'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
 import {
   Moon, Lock, Unlock, Bell, Volume2, VolumeX,
-  ChevronRight, LogOut, User, Clock, Info
+  ChevronRight, LogOut, User, Clock, Info, Edit
 } from '@/utils/icons'
 
 const SettingsPage: React.FC = () => {
@@ -18,12 +19,20 @@ const SettingsPage: React.FC = () => {
     toggleTheme,
     logout,
     setLockScreen,
-    addNotification
+    addNotification,
+    setUser
   } = useAppStore()
 
   const [showLockPassword, setShowLockPassword] = useState(false)
   const [lockPassword, setLockPassword] = useState('')
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [showEditName, setShowEditName] = useState(false)
+  const [newUsername, setNewUsername] = useState('')
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
   const handleSetLockPassword = () => {
     if (!lockPassword.trim()) return
@@ -49,6 +58,61 @@ const SettingsPage: React.FC = () => {
     })
     updateSettings({ lockScreenEnabled: false })
     addNotification({ message: '锁屏密码已移除', type: 'success' })
+  }
+
+  const handleSaveUsername = async () => {
+    if (!newUsername.trim()) return
+    if (!user) return
+    try {
+      // 更新 supabase users 表
+      const { error } = await supabase
+        .from('users')
+        .update({ username: newUsername.trim() })
+        .eq('id', user.id)
+      if (error) throw error
+      // 更新本地 store
+      setUser({ ...user, username: newUsername.trim() })
+      addNotification({ message: '昵称修改成功', type: 'success' })
+      setShowEditName(false)
+    } catch {
+      addNotification({ message: '昵称修改失败，请重试', type: 'error' })
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordError('')
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError('请填写所有密码字段')
+      return
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('新密码至少需要6个字符')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('两次输入的新密码不一致')
+      return
+    }
+    try {
+      // 先用旧密码验证用户身份
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: oldPassword,
+      })
+      if (signInError) {
+        setPasswordError('旧密码不正确')
+        return
+      }
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      addNotification({ message: '密码修改成功', type: 'success' })
+      setShowChangePassword(false)
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch {
+      setPasswordError('密码修改失败，请重试')
+    }
   }
 
   const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
@@ -148,13 +212,33 @@ const SettingsPage: React.FC = () => {
         {/* 用户信息卡片 */}
         <div className="card mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-card bg-primary-600/10 flex items-center justify-center">
-              <User size={24} className="text-primary-600" />
-            </div>
-            <div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="头像" className="w-14 h-14 rounded-card object-cover" />
+            ) : (
+              <div className="w-14 h-14 rounded-card bg-primary-600/10 flex items-center justify-center">
+                <User size={24} className="text-primary-600" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
               <h2 className="text-lg font-medium text-[var(--text-primary)]">{user?.username || '用户'}</h2>
               <p className="text-sm text-[var(--text-secondary)]">{user?.email || ''}</p>
             </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => { setNewUsername(user?.username || ''); setShowEditName(true) }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm rounded-button border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            >
+              <Edit size={14} />
+              修改昵称
+            </button>
+            <button
+              onClick={() => { setOldPassword(''); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); setShowChangePassword(true) }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm rounded-button border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            >
+              <Lock size={14} />
+              修改密码
+            </button>
           </div>
         </div>
 
@@ -267,6 +351,85 @@ const SettingsPage: React.FC = () => {
                 </button>
                 <button onClick={handleSetLockPassword} className="btn-primary">
                   确认
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修改昵称弹窗 */}
+      {showEditName && (
+        <div className="modal-overlay" onClick={() => setShowEditName(false)}>
+          <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-[var(--text-primary)] mb-4">修改昵称</h3>
+              <input
+                type="text"
+                value={newUsername}
+                onChange={e => setNewUsername(e.target.value)}
+                placeholder="输入新昵称"
+                className="input-dark mb-4"
+                autoFocus
+              />
+              <div className="flex items-center justify-end gap-3">
+                <button onClick={() => setShowEditName(false)} className="btn-secondary">
+                  取消
+                </button>
+                <button onClick={handleSaveUsername} className="btn-primary">
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修改密码弹窗 */}
+      {showChangePassword && (
+        <div className="modal-overlay" onClick={() => setShowChangePassword(false)}>
+          <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <h3 className="text-lg font-medium text-[var(--text-primary)]">修改密码</h3>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">旧密码</label>
+                <input
+                  type="password"
+                  value={oldPassword}
+                  onChange={e => setOldPassword(e.target.value)}
+                  placeholder="输入当前密码"
+                  className="input-dark"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">新密码</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="输入新密码（至少6位）"
+                  className="input-dark"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5">确认新密码</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="再次输入新密码"
+                  className="input-dark"
+                />
+              </div>
+              {passwordError && (
+                <p className="text-xs text-danger">{passwordError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3">
+                <button onClick={() => setShowChangePassword(false)} className="btn-secondary">
+                  取消
+                </button>
+                <button onClick={handleChangePassword} className="btn-primary">
+                  确认修改
                 </button>
               </div>
             </div>

@@ -26,6 +26,75 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.4.0',
+    date: '2026-07-20',
+    changes: [
+      '修复：删除数据被同步回来的问题（syncPull 过滤已删除记录）',
+      '优化：习惯打卡备注支持全文展示，记录历史改为全量',
+      '优化：习惯统计区分积极/消极习惯',
+      '新增：设置页支持修改昵称和密码',
+      '新增：设置页显示头像和完整个人信息',
+      '优化：替换应用图标，隐藏重复的顶部标题',
+      '优化：主题墙删除按钮改为低调样式',
+    ]
+  },
+  {
+    version: 'V1.3.3',
+    date: '2026-07-20',
+    changes: [
+      '修复：同步时本地修改被远程旧数据覆盖的问题（改为先 push 再 pull）',
+      '修复：mergeRecords 冲突解决策略，相等时优先保留本地',
+    ]
+  },
+  {
+    version: 'V1.3.2',
+    date: '2026-07-20',
+    changes: [
+      '修复：彻底修复多账号数据交叉污染问题（清除内存状态 + 使用真实 user_id）',
+      '修复：Tracker deleteEntry 改为软删除，避免同步后复活',
+      '修复：trackerEntryToDb 补充 updated_at 字段',
+      '修复：syncDelete 增加 user_id 过滤',
+    ]
+  },
+  {
+    version: 'V1.3.1',
+    date: '2026-07-20',
+    changes: [
+      '新增：主题墙支持删除功能',
+    ]
+  },
+  {
+    version: 'V1.3.0',
+    date: '2026-07-20',
+    changes: [
+      '修复：切换账号后旧账号数据泄漏到新账号的问题',
+      '优化：注册成功提示由原生 alert 改为内嵌通知',
+    ]
+  },
+  {
+    version: 'V1.2.9',
+    date: '2026-07-20',
+    changes: [
+      '修复：新设备首次登录同步无法拉取云端已有数据的问题',
+    ]
+  },
+  {
+    version: 'V1.2.8',
+    date: '2026-07-20',
+    changes: [
+      '修复：数据同步失败的关键 Bug（syncPull 缺少查询执行导致所有表拉取异常）',
+    ]
+  },
+  {
+    version: 'V1.2.7',
+    date: '2026-07-19',
+    changes: [
+      '优化：专注计时全屏模式下显示任务待办、白噪音控制',
+      '新增：全屏模式支持按 Esc 退出全屏',
+      '优化：全屏时返回按钮靠左、全屏按钮靠右布局',
+    ]
+  },
+  {
     version: 'V1.2.6',
     date: '2026-07-19',
     changes: [
@@ -102,7 +171,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.2.6'
+        const currentVersion = '1.4.0'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -189,7 +258,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.2.6</span>
+            <span className="text-[#222] font-medium">V1.4.0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
@@ -286,7 +355,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.2.6</span>
+          <span className="text-sm text-[#555]">当前版本 V1.4.0</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}

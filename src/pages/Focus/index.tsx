@@ -244,6 +244,32 @@ const FocusPage: React.FC = () => {
 
   // ---- 无边框全屏切换（Electron 原生 setFullScreen） ----
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const exitFullscreen = useCallback(async () => {
+    if (isFullscreen && window.electronAPI?.toggleFullscreen) {
+      const next = await window.electronAPI.toggleFullscreen()
+      setIsFullscreen(next)
+      const aside = document.querySelector('aside') as HTMLElement | null
+      const header = document.querySelector('header') as HTMLElement | null
+      const titleBar = document.querySelector('.fixed.top-0') as HTMLElement | null
+      const mainWrap = document.querySelector('.h-screen.w-screen') as HTMLElement | null
+      aside && (aside.style.display = '')
+      header && (header.style.display = '')
+      titleBar && (titleBar.style.display = '')
+      mainWrap && (mainWrap.style.paddingTop = '')
+    }
+  }, [isFullscreen])
+
+  // Esc 键退出全屏
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        exitFullscreen()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen, exitFullscreen])
+
   const toggleFullscreen = useCallback(async () => {
     if (window.electronAPI?.toggleFullscreen) {
       const next = await window.electronAPI.toggleFullscreen()
@@ -589,6 +615,9 @@ const FocusPage: React.FC = () => {
 
   // ---- 返回首页 ----
   const goHome = () => {
+    if (isFullscreen) {
+      exitFullscreen()
+    }
     pauseTimer()
     setElapsed(0)
     setIsRest(false)
@@ -961,7 +990,7 @@ const FocusPage: React.FC = () => {
               <button
                 onClick={goHome}
                 className="flex items-center gap-1.5 text-sm transition-colors"
-                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', opacity: isFullscreen ? 0.5 : 1 }}
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
               >
@@ -1069,7 +1098,7 @@ const FocusPage: React.FC = () => {
                     )}
 
                     {/* Theme / task line with selection panel */}
-                    {!isFullscreen && <div className="mb-8" style={{ position: 'relative' }} ref={topicPanelRef}>
+                    <div className="mb-8" style={{ position: 'relative' }} ref={topicPanelRef}>
                       <button
                         onClick={() => {
                           if (isRunning) return
@@ -1248,7 +1277,7 @@ const FocusPage: React.FC = () => {
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>}
+                    </div>
 
                     {/* Progress bar */}
                     {(mode === 'countDown' || mode === 'pomodoro') && targetDuration > 0 && (
@@ -1352,8 +1381,8 @@ const FocusPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Right: Linked task info panel - hidden in fullscreen */}
-              {!isFullscreen && <div className="flex-1 flex flex-col gap-4 min-w-[280px] max-w-[360px]">
+              {/* Right: Linked task info panel */}
+              <div className="flex-1 flex flex-col gap-4 min-w-[280px] max-w-[360px]">
                 <div
                   className="flex-1 flex flex-col min-h-0 p-4"
                   style={{
@@ -1461,14 +1490,14 @@ const FocusPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-              </div>}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ==================== WHITE NOISE FLOATING PANEL (shared) ==================== */}
-      {!isFullscreen && renderSoundPanel()}
+      {renderSoundPanel()}
 
       {/* ==================== 结算弹窗 ==================== */}
       <AnimatePresence>

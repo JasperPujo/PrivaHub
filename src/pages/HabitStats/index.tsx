@@ -236,12 +236,36 @@ const HabitStatsPage: React.FC = () => {
             {/* 每周打卡次数对比（BarChart） */}
             <StatsCard title="每周打卡次数对比" data={stats.weeklyData} type="bar" />
 
-            {/* 各习惯完成情况（雷达图） */}
+            {/* 各习惯打卡情况（雷达图） */}
             <RadarChart
-              title="各习惯完成情况"
+              title="各习惯打卡情况"
               indicators={stats.radarIndicators}
               data={stats.radarData}
             />
+            {/* 习惯类型分组说明 */}
+            {(() => {
+              const positiveNames = filteredHabits.filter(h => h.type === 'positive').map(h => h.name)
+              const negativeNames = filteredHabits.filter(h => h.type === 'negative').map(h => h.name)
+              if (positiveNames.length === 0 && negativeNames.length === 0) return null
+              return (
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex flex-wrap gap-4 text-xs text-[#777]">
+                    {positiveNames.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-success"></span>
+                        <span>积极：{positiveNames.join('、')}</span>
+                      </div>
+                    )}
+                    {negativeNames.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-warning"></span>
+                        <span>消极：{negativeNames.join('、')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>

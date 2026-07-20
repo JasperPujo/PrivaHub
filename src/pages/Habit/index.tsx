@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useHabitStore } from '@/store'
+import { useHabitStore, useAppStore } from '@/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import Modal from '@/components/Modal/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -14,6 +14,7 @@ import { generateUUID } from '@/lib/utils'
 const HabitPage: React.FC = () => {
   const navigate = useNavigate()
   const { habits, addHabit, updateHabit, deleteHabit, checkin, uncheckin } = useHabitStore()
+  const { user } = useAppStore()
   const [showModal, setShowModal] = useState(false)
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
@@ -46,7 +47,7 @@ const HabitPage: React.FC = () => {
     } else {
       addHabit({
         id: generateUUID(),
-        user_id: 'current-user',
+        user_id: user?.id || 'current-user',
         name: form.name,
         type: form.type,
         checkins: [],
@@ -326,6 +327,13 @@ const HabitPage: React.FC = () => {
                     })}
                   </div>
 
+                  {/* 今日备注预览 */}
+                  {todayCheckin && todayCheckin.note && (
+                    <div className="bg-[var(--bg-secondary)] rounded-button p-2 mb-2">
+                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-all leading-relaxed">{todayCheckin.note}</p>
+                    </div>
+                  )}
+
                   {!todayCheckin ? (
                     <button onClick={() => openCheckin(habit.id)}
                       className="w-full btn-primary py-2 text-sm flex items-center justify-center gap-1.5">
@@ -335,7 +343,7 @@ const HabitPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button onClick={() => openCheckin(habit.id)}
                         className="flex-1 py-2 text-sm text-center text-success bg-success/10 rounded-button hover:bg-success/20 transition-colors">
-                        今日已记录{todayCheckin.note && ` · ${todayCheckin.note}`}
+                        今日已记录
                       </button>
                       <button onClick={() => uncheckin(habit.id, today)}
                         className="px-3 py-2 text-sm text-danger bg-danger/10 rounded-button hover:bg-danger/20 transition-colors"
@@ -602,13 +610,18 @@ const HabitPage: React.FC = () => {
 
               {/* 记录历史 */}
               <div className="bg-[var(--bg-secondary)] rounded-card p-4">
-                <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3">记录历史（最近30条）</h4>
-                <div className="space-y-1 max-h-48 overflow-auto">
-                  {habit.checkins.slice().reverse().slice(0, 30).map(c => (
-                    <div key={c.date} className="flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-[var(--bg-primary)]">
-                      <span className="text-[var(--text-secondary)]">{c.date}</span>
-                      <div className="flex items-center gap-2">
-                        {c.note ? <span className="text-[var(--text-tertiary)] text-xs truncate max-w-[150px]">{c.note}</span> : <span className="text-success text-xs">已记录</span>}
+                <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3">记录历史</h4>
+                <div className="space-y-1 max-h-96 overflow-auto">
+                  {habit.checkins.slice().reverse().map(c => (
+                    <div key={c.date} className="flex items-start justify-between text-sm py-1.5 px-2 rounded hover:bg-[var(--bg-primary)]">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[var(--text-secondary)]">{c.date}</span>
+                        {c.note && (
+                          <p className="text-xs text-[var(--text-tertiary)] whitespace-pre-wrap break-all leading-relaxed mt-0.5">{c.note}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        {!c.note && <span className="text-success text-xs">已记录</span>}
                         <button onClick={() => uncheckin(habit.id, c.date)}
                           className="p-0.5 text-danger hover:bg-danger/10 rounded" title="删除这条记录">
                           <X size={12} />
@@ -618,6 +631,13 @@ const HabitPage: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* 半年归档提醒 */}
+              {habit.checkins.length > 180 && (
+                <div className="bg-warning/10 text-warning text-xs p-3 rounded-button mt-4">
+                  您已有 {habit.checkins.length} 条打卡记录，建议归档半年前的记录以保持应用流畅。超过 365 天的记录将无法继续记录。
+                </div>
+              )}
             </div>
           )
         })()}

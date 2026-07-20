@@ -21,7 +21,8 @@ function mergeRecords(local: any, remote: any): any {
   if (!remote) return local
   const localTime = local.updated_at || local.created_at || '1970-01-01'
   const remoteTime = remote.updated_at || remote.created_at || '1970-01-01'
-  return localTime > remoteTime ? local : remote
+  // 本地时间 >= 远程时间时保留本地（相等时优先保留本地最新操作）
+  return localTime >= remoteTime ? local : remote
 }
 
 /**
@@ -152,11 +153,14 @@ export async function syncPull(table: string, userId: string, fromDbRow?: (row: 
       .from(table)
       .select('*')
       .eq('user_id', userId)
+      .is('deleted_at', null)
 
     // 增量：只拉取 updated_at 大于 since 的记录
     if (since) {
       query = query.gt('updated_at', since)
     }
+
+    const { data, error, status, statusText } = await query
 
     if (error) {
       if (error.message?.includes('does not exist') || error.code === '42P01') {
@@ -205,9 +209,9 @@ export async function syncPull(table: string, userId: string, fromDbRow?: (row: 
 /**
  * 单条删除同步
  */
-export async function syncDelete(table: string, id: string) {
+export async function syncDelete(table: string, id: string, userId: string) {
   try {
-    const { error } = await supabase.from(table).delete().eq('id', id)
+    const { error } = await supabase.from(table).delete().eq('id', id).eq('user_id', userId)
     if (error) {
       console.error(
         `[Sync] Delete from table "${table}" failed: id=${id}`,
@@ -241,28 +245,42 @@ export async function fullSync(userId: string, stores: Record<string, {
 }>, options?: { since?: string | null; parallel?: boolean }) {
   const since = options?.since || null
   const useParallel = options?.parallel !== false
+
+  // 如果所有本地 store 都为空，说明是新设备/首次同步，强制全量拉取
+  const allStores = Object.values(stores)
+  const hasAnyLocalData = allStores.some(s => s.getData().length > 0)
+  const effectiveSince = hasAnyLocalData ? since : null
+  if (!hasAnyLocalData && since) {
+    console.log('[Sync] No local data detected, forcing full sync (ignoring since)')
+  }
   const results: Record<string, any> = {}
 
   const syncOne = async ([key, store]: [string, any]) => {
     const { table, getData, setData, toDbRow, fromDbRow } = store
     try {
-      // 1. 拉取远程数据（增量或全量）
-      const pullResult = await syncPull(table, userId, fromDbRow, since)
-      const remoteData = pullResult.success ? pullResult.data : []
+      // 1. 获取本地数据
+      const localData = getData()
 
-      // 2. 获取本地数据
-      let localData = getData()
-
-      // 增量模式下，只推送本地更新过的数据
+      // 2. 计算需要推送的数据（增量模式下只推送本地更新过的数据）
       let dataToPush = localData
-      if (since) {
+      if (effectiveSince) {
         dataToPush = localData.filter((item: any) => {
           const t = item.updated_at || item.created_at || ''
-          return t > since
+          return t > effectiveSince
         })
       }
 
-      // 3. 合并远程拉取的数据到本地
+      // 3. 先推送本地变更到云端（确保本地修改优先被保存，避免被后续 pull 的远程旧数据覆盖）
+      let pushResult: any = { success: true, count: 0 }
+      if (dataToPush.length > 0) {
+        pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
+      }
+
+      // 4. 拉取远程数据（增量或全量）
+      const pullResult = await syncPull(table, userId, fromDbRow, effectiveSince)
+      const remoteData = pullResult.success ? pullResult.data : []
+
+      // 5. 合并远程数据到本地（基于 updated_at 冲突解决，本地 >= 远程时保留本地）
       if (remoteData.length > 0) {
         const localMap = new Map(localData.map((item: any) => [item.id, item]))
         for (const item of remoteData) {
@@ -273,20 +291,9 @@ export async function fullSync(userId: string, stores: Record<string, {
         }
         const mergedData = Array.from(localMap.values())
         setData(mergedData)
-        // 合并后，推送也需要包含合并进来的远程新数据
-        dataToPush = mergedData.filter((item: any) => {
-          const t = item.updated_at || item.created_at || ''
-          return !since || t > since
-        })
       }
 
-      // 4. 推送到远程（增量模式下只推送变化的数据）
-      if (dataToPush.length > 0) {
-        const pushResult = await syncPush({ table, userId, data: dataToPush, toDbRow })
-        results[key] = { pull: pullResult, push: pushResult, mergedCount: dataToPush.length, table }
-      } else {
-        results[key] = { pull: pullResult, push: { success: true, count: 0 }, mergedCount: 0, table }
-      }
+      results[key] = { pull: pullResult, push: pushResult, mergedCount: dataToPush.length, table }
     } catch (err: any) {
       console.error(`[Sync] Error syncing table "${table}" (key: ${key}):`, err)
       results[key] = { pull: { success: false }, push: { success: false }, error: err, table }
@@ -565,4 +572,5 @@ export const trackerEntryToDb = (item: any) => ({
   note: item.note || '',
   deleted_at: item.deleted_at || null,
   created_at: item.created_at || new Date().toISOString(),
+  updated_at: item.updated_at || new Date().toISOString(),
 })
