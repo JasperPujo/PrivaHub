@@ -26,6 +26,16 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.5.2',
+    date: '2026-07-21',
+    changes: [
+      '优化：随心贴移到第三栏，去除小图标与其他卡片统一风格',
+      '优化：习惯记录区分积极/消极（+N/-N）',
+      '优化：本周完成率改为今日已完成任务数',
+      '优化：实时记录卡片改为展示最近3条记录，不再是超链接',
+    ]
+  },
+  {
     version: 'V1.5.0',
     date: '2026-07-20',
     changes: [

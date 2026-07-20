@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore } from '@/store'
+import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore, useTrackerStore } from '@/store'
 import {
   CheckSquare, Calendar, Target, TrendingUp, StickyNote, Activity,
-  ArrowRight, Clock, Edit, X, Settings, ChevronDown, Check, Zap, BarChart2
+  ArrowRight, Clock, Edit, X, Settings, ChevronDown, Zap
 } from '@/utils/icons'
 
 const container = {
@@ -37,6 +37,7 @@ const Home: React.FC = () => {
   const { plans } = usePlanStore()
   const { habits } = useHabitStore()
   const { notes, walls } = useNoteStore()
+  const { categories: trackerCategories, entries: trackerEntries } = useTrackerStore()
   const [editShortcuts, setEditShortcuts] = useState(false)
   const [now, setNow] = useState(new Date())
   const [noteDisplayIdx, setNoteDisplayIdx] = useState(0)
@@ -47,7 +48,6 @@ const Home: React.FC = () => {
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
-  // 兼容旧版数据：homeShortcuts 可能不存在
   const homeShortcuts = settings.homeShortcuts || ['todo', 'calendar', 'plan', 'notes']
 
   const pendingTasks = tasks.filter(t => !t.is_completed && !t.deleted_at).slice(0, 5)
@@ -66,7 +66,7 @@ const Home: React.FC = () => {
   const activeWalls = walls.filter(w => !w.deleted_at)
   const activeNotes = notes.filter(n => {
     if (n.deleted_at) return false
-    if (selectedWallIds.length === 0) return false // 不选 = 不轮播
+    if (selectedWallIds.length === 0) return false
     return selectedWallIds.includes(n.wall_id)
   })
   const noteWallMap = new Map(activeWalls.map(w => [w.id, w.name]))
@@ -79,25 +79,20 @@ const Home: React.FC = () => {
     return () => clearInterval(timer)
   }, [activeNotes.length, noteRotationInterval])
 
-  // 今日习惯统计
+  // 今日习惯：区分积极/消极
   const todayStr = new Date().toISOString().split('T')[0]
   const activeHabits = habits.filter(h => !h.deleted_at)
-  const todayCheckedHabits = activeHabits.filter(h => h.checkins.some(c => c.date === todayStr))
+  const positiveHabits = activeHabits.filter(h => h.type !== 'negative')
+  const negativeHabits = activeHabits.filter(h => h.type === 'negative')
+  const todayCheckedPositive = positiveHabits.filter(h => h.checkins.some(c => c.date === todayStr))
+  const todayCheckedNegative = negativeHabits.filter(h => h.checkins.some(c => c.date === todayStr))
 
-  // 本周完成率
-  const weekStart = new Date()
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
-  weekStart.setHours(0, 0, 0, 0)
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  const weekSchedules = schedules.filter(s => {
-    if (s.deleted_at) return false
-    const d = new Date(s.start_time)
-    return d >= weekStart && d <= weekEnd
-  })
-  const weekTasks = tasks.filter(t => !t.deleted_at && t.is_completed && new Date(t.updated_at) >= weekStart)
-  const totalWeekItems = weekSchedules.length + tasks.filter(t => !t.deleted_at && new Date(t.created_at) >= weekStart).length
-  const completedWeekItems = weekTasks.length + weekSchedules.length
+  // 最近3条实时记录
+  const recentTrackerEntries = trackerEntries
+    .filter(e => !e.deleted_at)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 3)
+  const categoryMap = new Map(trackerCategories.filter(c => !c.deleted_at).map(c => [c.id, c]))
 
   return (
     <div className="page-container">
@@ -126,66 +121,8 @@ const Home: React.FC = () => {
           </h1>
         </motion.div>
 
-        {/* 三栏：随心贴 + 待办 + 日程 */}
+        {/* 三栏：待办 + 日程 + 随心贴 */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* 随心贴轮播（大卡片） */}
-          <motion.div variants={item} className="lg:col-span-1">
-            <div className="card-hover text-left group relative overflow-hidden h-full min-h-[280px] flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-button bg-primary-100 flex items-center justify-center">
-                    <StickyNote size={20} className="text-primary-600" />
-                  </div>
-                  <h2 className="text-base font-semibold text-[var(--text-primary)]">随心贴</h2>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setShowNoteSettings(true)}
-                    className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors"
-                    title="轮播设置"
-                  >
-                    <Settings size={14} />
-                  </button>
-                  <button onClick={() => navigate('/notes')} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors">
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              </div>
-              {activeNotes.length > 0 ? (
-                <div className="flex-1 flex flex-col">
-                  <motion.div
-                    key={activeNotes[noteDisplayIdx]?.id || 'empty'}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="flex-1 flex flex-col justify-center"
-                  >
-                    <p className="text-sm font-medium text-[var(--text-primary)] whitespace-pre-wrap break-all leading-relaxed">
-                      {activeNotes[noteDisplayIdx].content || '空白贴纸'}
-                    </p>
-                  </motion.div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-color)]">
-                    <span className="text-xs text-[var(--text-tertiary)]">
-                      {noteWallMap.get(activeNotes[noteDisplayIdx].wall_id) || '未分类'}
-                    </span>
-                    <span className="text-xs text-[var(--text-tertiary)]">
-                      {new Date(activeNotes[noteDisplayIdx].created_at).toLocaleDateString('zh-CN')}
-                      {activeNotes.length > 1 && ` · ${noteDisplayIdx + 1}/${activeNotes.length}`}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <StickyNote size={32} className="text-[var(--text-tertiary)] mb-2" />
-                  <p className="text-sm text-[var(--text-tertiary)]">暂无随心贴</p>
-                  <button onClick={() => navigate('/notes')} className="text-xs text-primary-600 mt-2 hover:underline">
-                    去创建 →
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
           {/* 待办任务预览 */}
           <motion.div variants={item} className="card shadow-card min-h-[280px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
@@ -252,6 +189,58 @@ const Home: React.FC = () => {
               </div>
             )}
           </motion.div>
+
+          {/* 随心贴轮播（大卡片，无图标） */}
+          <motion.div variants={item} className="lg:col-span-1">
+            <div className="card-hover text-left group relative overflow-hidden h-full min-h-[280px] flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-0">随心贴</h2>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setShowNoteSettings(true)}
+                    className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors"
+                    title="轮播设置"
+                  >
+                    <Settings size={14} />
+                  </button>
+                  <button onClick={() => navigate('/notes')} className="p-1 rounded-md hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-primary-600 transition-colors">
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+              {activeNotes.length > 0 ? (
+                <div className="flex-1 flex flex-col">
+                  <motion.div
+                    key={activeNotes[noteDisplayIdx]?.id || 'empty'}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex-1 flex flex-col justify-center"
+                  >
+                    <p className="text-sm font-medium text-[var(--text-primary)] whitespace-pre-wrap break-all leading-relaxed">
+                      {activeNotes[noteDisplayIdx].content || '空白贴纸'}
+                    </p>
+                  </motion.div>
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-color)]">
+                    <span className="text-xs text-[var(--text-tertiary)]">
+                      {noteWallMap.get(activeNotes[noteDisplayIdx].wall_id) || '未分类'}
+                    </span>
+                    <span className="text-xs text-[var(--text-tertiary)]">
+                      {new Date(activeNotes[noteDisplayIdx].created_at).toLocaleDateString('zh-CN')}
+                      {activeNotes.length > 1 && ` · ${noteDisplayIdx + 1}/${activeNotes.length}`}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <p className="text-sm text-[var(--text-tertiary)]">暂无随心贴</p>
+                  <button onClick={() => navigate('/notes')} className="text-xs text-primary-600 mt-2 hover:underline">
+                    去创建 →
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
 
         {/* 下方信息卡片 */}
@@ -268,22 +257,24 @@ const Home: React.FC = () => {
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">未落地规划</p>
           </button>
 
-          {/* 今日习惯进度 */}
+          {/* 今日习惯记录 */}
           <button onClick={() => navigate('/habit')} className="card-hover text-left group">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-button bg-success flex items-center justify-center">
-                <BarChart2 size={20} className="text-white" />
+                <TrendingUp size={20} className="text-white" />
               </div>
               <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
             </div>
-            <p className="text-2xl font-bold text-[var(--text-primary)]">
-              {todayCheckedHabits.length}/{activeHabits.length}
+            <p className="text-lg font-bold text-[var(--text-primary)]">
+              <span className="text-success">+{todayCheckedPositive.length}</span>
+              <span className="text-[var(--text-tertiary)] mx-1">/</span>
+              <span className="text-warning">-{todayCheckedNegative.length}</span>
             </p>
-            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日习惯进度</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日习惯记录</p>
           </button>
 
-          {/* 本周总览 */}
-          <button onClick={() => navigate('/calendar')} className="card-hover text-left group">
+          {/* 已完成任务 */}
+          <button onClick={() => navigate('/todo')} className="card-hover text-left group">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-button bg-accent flex items-center justify-center">
                 <Zap size={20} className="text-white" />
@@ -291,22 +282,36 @@ const Home: React.FC = () => {
               <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
             </div>
             <p className="text-2xl font-bold text-[var(--text-primary)]">
-              {totalWeekItems > 0 ? Math.round(completedWeekItems / totalWeekItems * 100) : 0}%
+              {tasks.filter(t => t.is_completed && !t.deleted_at && new Date(t.updated_at || t.created_at).toDateString() === new Date().toDateString()).length}
             </p>
-            <p className="text-sm text-[var(--text-secondary)] mt-0.5">本周完成率</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日已完成</p>
           </button>
 
-          {/* 快速记录 */}
-          <button onClick={() => navigate('/tracker')} className="card-hover text-left group">
+          {/* 最近记录（实时数据，非链接） */}
+          <div className="card-hover text-left">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-button bg-primary-600 flex items-center justify-center">
                 <Activity size={20} className="text-white" />
               </div>
-              <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
             </div>
-            <p className="text-2xl font-bold text-[var(--text-primary)]">记录</p>
-            <p className="text-sm text-[var(--text-secondary)] mt-0.5">实时数据追踪</p>
-          </button>
+            {recentTrackerEntries.length > 0 ? (
+              <div className="space-y-1.5">
+                {recentTrackerEntries.map(entry => {
+                  const cat = categoryMap.get(entry.category_id)
+                  const time = new Date(entry.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                  return (
+                    <div key={entry.id} className="flex items-center gap-2 text-sm">
+                      <span className="text-xs text-[var(--text-tertiary)] w-10 flex-shrink-0">{time}</span>
+                      <span className="text-xs text-primary-600 font-medium truncate">{cat?.name || '未分类'}</span>
+                      {entry.note && <span className="text-xs text-[var(--text-tertiary)] truncate">{entry.note}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-tertiary)]">暂无记录</p>
+            )}
+          </div>
         </div>
 
         {/* 快捷操作 */}
