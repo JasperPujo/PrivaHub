@@ -26,6 +26,14 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.5.6',
+    date: '2026-07-22',
+    changes: [
+      '修复：删除按钮点击无反应（移除 store 中的 immediateSyncDelete 动态导入）',
+      '修复：合并时本地已删除记录不会被远程未删除状态覆盖',
+    ]
+  },
+  {
     version: 'V1.5.5',
     date: '2026-07-22',
     changes: [
@@ -242,7 +250,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.5.1'
+        const currentVersion = '1.5.6'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -329,7 +337,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.5.4</span>
+            <span className="text-[#222] font-medium">V1.5.6</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
