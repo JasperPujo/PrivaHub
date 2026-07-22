@@ -138,10 +138,9 @@ const Login: React.FC = () => {
 
     setUser({
       id: data.user.id,
-      name: userData?.name || userData?.username || loginForm.username.split('@')[0],
+      username: userData?.username || userData?.name || loginForm.username.split('@')[0],
       email: data.user.email || loginForm.username,
       avatar: userData?.avatar || cachedAvatar || null,
-      role: userData?.role || 'user',
       created_at: userData?.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -262,8 +261,9 @@ const Login: React.FC = () => {
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <img src={appIcon} alt="PrivaHub" className="w-16 h-16 rounded-card mb-4 shadow-glow" />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">个人私密工作台</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">你的专属私人空间</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-purple-400 bg-clip-text text-transparent animate-pulse">
+            PrivaHub
+          </h1>
         </div>
 
         {/* 切换标签 */}

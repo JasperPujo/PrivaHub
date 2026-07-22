@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useHabitStore, useNoteStore, useTrackerStore } from '@/store'
+import { useAppStore, useTodoStore, useScheduleStore, usePlanStore, useNoteStore, useTrackerStore } from '@/store'
 import {
   CheckSquare, Calendar, Target, TrendingUp, StickyNote, Activity,
   ArrowRight, Clock, Edit, X, Settings, ChevronDown, Zap
@@ -35,7 +35,6 @@ const Home: React.FC = () => {
   const { tasks } = useTodoStore()
   const { schedules } = useScheduleStore()
   const { plans } = usePlanStore()
-  const { habits } = useHabitStore()
   const { notes, walls } = useNoteStore()
   const { categories: trackerCategories, entries: trackerEntries } = useTrackerStore()
   const [editShortcuts, setEditShortcuts] = useState(false)
@@ -79,13 +78,17 @@ const Home: React.FC = () => {
     return () => clearInterval(timer)
   }, [activeNotes.length, noteRotationInterval])
 
-  // 今日习惯：区分积极/消极
-  const todayStr = new Date().toISOString().split('T')[0]
-  const activeHabits = habits.filter(h => !h.deleted_at)
-  const positiveHabits = activeHabits.filter(h => h.type !== 'negative')
-  const negativeHabits = activeHabits.filter(h => h.type === 'negative')
-  const todayCheckedPositive = positiveHabits.filter(h => h.checkins.some(c => c.date === todayStr))
-  const todayCheckedNegative = negativeHabits.filter(h => h.checkins.some(c => c.date === todayStr))
+  // 今日专注时长
+  const todayFocusStr = new Date().toISOString().split('T')[0]
+  let todayFocusMinutes = 0
+  try {
+    const savedSessions = localStorage.getItem('focus_sessions')
+    if (savedSessions) {
+      const sessions: Array<{ duration: number; created_at: string }> = JSON.parse(savedSessions)
+      const todaySessions = sessions.filter(s => s.created_at && s.created_at.startsWith(todayFocusStr))
+      todayFocusMinutes = Math.round(todaySessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60)
+    }
+  } catch {}
 
   // 最近3条实时记录
   const recentTrackerEntries = trackerEntries
@@ -102,9 +105,14 @@ const Home: React.FC = () => {
         animate="show"
         className="max-w-6xl mx-auto space-y-6"
       >
-        {/* 日期和实时时间 */}
-        <motion.div variants={item}>
-          <div className="mb-6">
+        {/* 欢迎语 + 日期时间 */}
+        <motion.div variants={item} className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="page-title">
+              欢迎回来，{user?.username || settings.username || '用户'}
+            </h1>
+          </div>
+          <div className="text-right">
             <p className="text-3xl font-bold text-[var(--text-primary)]">
               {now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </p>
@@ -112,13 +120,6 @@ const Home: React.FC = () => {
               {now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </p>
           </div>
-        </motion.div>
-
-        {/* 欢迎语 */}
-        <motion.div variants={item}>
-          <h1 className="page-title">
-            欢迎回来，{user?.username || settings.username || '用户'}
-          </h1>
         </motion.div>
 
         {/* 三栏：待办 + 日程 + 随心贴 */}
@@ -218,7 +219,11 @@ const Home: React.FC = () => {
                     className="flex-1 flex flex-col justify-center"
                   >
                     <p className="text-sm font-medium text-[var(--text-primary)] whitespace-pre-wrap break-all leading-relaxed">
-                      {activeNotes[noteDisplayIdx].content || '空白贴纸'}
+                      {(() => {
+                        const c = activeNotes[noteDisplayIdx].content
+                        const noteContent = typeof c === 'string' ? c : c?.text || ''
+                        return noteContent || '空白贴纸'
+                      })()}
                     </p>
                   </motion.div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-color)]">
@@ -257,20 +262,16 @@ const Home: React.FC = () => {
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">未落地规划</p>
           </button>
 
-          {/* 今日习惯记录 */}
-          <button onClick={() => navigate('/habit')} className="card-hover text-left group">
+          {/* 今日专注时长 */}
+          <button onClick={() => navigate('/focus')} className="card-hover text-left group">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-button bg-success flex items-center justify-center">
-                <TrendingUp size={20} className="text-white" />
+                <Zap size={20} className="text-white" />
               </div>
               <ArrowRight size={16} className="text-[var(--text-tertiary)] group-hover:text-primary-600 transition-colors" />
             </div>
-            <p className="text-lg font-bold text-[var(--text-primary)]">
-              <span className="text-success">+{todayCheckedPositive.length}</span>
-              <span className="text-[var(--text-tertiary)] mx-1">/</span>
-              <span className="text-warning">-{todayCheckedNegative.length}</span>
-            </p>
-            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日习惯记录</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{todayFocusMinutes}分钟</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">今日专注时长</p>
           </button>
 
           {/* 已完成任务 */}
@@ -294,6 +295,7 @@ const Home: React.FC = () => {
                 <Activity size={20} className="text-white" />
               </div>
             </div>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">实时记录</p>
             {recentTrackerEntries.length > 0 ? (
               <div className="space-y-1.5">
                 {recentTrackerEntries.map(entry => {
