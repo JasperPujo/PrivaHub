@@ -2,6 +2,18 @@
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User, UserSettings, Task, Schedule, Habit, Plan, NoteWall, Note, Tag, ModuleConfig, LockScreenState, TrackerCategory, TrackerEntry } from '@/types'
 
+// 删除时立即同步 deleted_at 到 Supabase，防止下次 pull 复活
+function immediateSyncDelete(table: string, id: string, userId: string | null) {
+  if (!userId) return
+  import('@/lib/supabase').then(({ supabase }) => {
+    supabase.from(table).update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', id).eq('user_id', userId)
+      .then(({ error }) => {
+        if (error) console.warn(`[Store] Failed to immediate sync delete for ${table}/${id}:`, error.message)
+      })
+  })
+}
+
 const APP_VERSION = '1.2.0'
 
 // 模块配置
@@ -293,9 +305,13 @@ export const useTodoStore = create<TodoState>()(
           })
         }
       }),
-      deleteTask: (id) => set((state) => ({
-        tasks: state.tasks.map(t => t.id === id ? { ...t, deleted_at: new Date().toISOString() } : t)
-      })),
+      deleteTask: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('tasks', id, userId)
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? { ...t, deleted_at: new Date().toISOString() } : t)
+        }))
+      },
       archiveTask: (id) => set((state) => {
         const task = state.tasks.find(t => t.id === id)
         if (!task || !task.is_completed) return state
@@ -351,9 +367,13 @@ export const useScheduleStore = create<ScheduleState>()(
       updateSchedule: (id, schedule) => set((state) => ({
         schedules: state.schedules.map(s => s.id === id ? { ...s, ...schedule, updated_at: new Date().toISOString() } : s)
       })),
-      deleteSchedule: (id) => set((state) => ({
-        schedules: state.schedules.map(s => s.id === id ? { ...s, deleted_at: new Date().toISOString() } : s)
-      })),
+      deleteSchedule: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('schedules', id, userId)
+        set((state) => ({
+          schedules: state.schedules.map(s => s.id === id ? { ...s, deleted_at: new Date().toISOString() } : s)
+        }))
+      },
       clearData: () => set({ schedules: [] }),
     }),
     {
@@ -384,9 +404,13 @@ export const usePlanStore = create<PlanState>()(
       updatePlan: (id, plan) => set((state) => ({
         plans: state.plans.map(p => p.id === id ? { ...p, ...plan, updated_at: new Date().toISOString() } : p)
       })),
-      deletePlan: (id) => set((state) => ({
-        plans: state.plans.map(p => p.id === id ? { ...p, deleted_at: new Date().toISOString() } : p)
-      })),
+      deletePlan: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('plans', id, userId)
+        set((state) => ({
+          plans: state.plans.map(p => p.id === id ? { ...p, deleted_at: new Date().toISOString() } : p)
+        }))
+      },
       addTag: (tag) => set((state) => ({ tags: [...state.tags, tag] })),
       clearData: () => set({ plans: [], tags: [] }),
     }),
@@ -417,9 +441,13 @@ export const useHabitStore = create<HabitState>()(
       updateHabit: (id, habit) => set((state) => ({
         habits: state.habits.map(h => h.id === id ? { ...h, ...habit, updated_at: new Date().toISOString() } : h)
       })),
-      deleteHabit: (id) => set((state) => ({
-        habits: state.habits.map(h => h.id === id ? { ...h, deleted_at: new Date().toISOString() } : h)
-      })),
+      deleteHabit: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('habits', id, userId)
+        set((state) => ({
+          habits: state.habits.map(h => h.id === id ? { ...h, deleted_at: new Date().toISOString() } : h)
+        }))
+      },
       checkin: (id, date, note) => set((state) => ({
         habits: state.habits.map(h => {
           if (h.id !== id) return h
@@ -484,9 +512,13 @@ export const useNoteStore = create<NoteState>()(
       updateWall: (id, wall) => set((state) => ({
         walls: state.walls.map(w => w.id === id ? { ...w, ...wall, updated_at: new Date().toISOString() } : w)
       })),
-      deleteWall: (id) => set((state) => ({
-        walls: state.walls.map(w => w.id === id ? { ...w, deleted_at: new Date().toISOString() } : w)
-      })),
+      deleteWall: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('note_walls', id, userId)
+        set((state) => ({
+          walls: state.walls.map(w => w.id === id ? { ...w, deleted_at: new Date().toISOString() } : w)
+        }))
+      },
       reorderWalls: (wallIds) => set((state) => {
         const orderMap = new Map(wallIds.map((id, idx) => [id, idx]))
         return {
@@ -500,9 +532,13 @@ export const useNoteStore = create<NoteState>()(
       updateNote: (id, note) => set((state) => ({
         notes: state.notes.map(n => n.id === id ? { ...n, ...note, updated_at: new Date().toISOString() } : n)
       })),
-      deleteNote: (id) => set((state) => ({
-        notes: state.notes.map(n => n.id === id ? { ...n, deleted_at: new Date().toISOString() } : n)
-      })),
+      deleteNote: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('notes', id, userId)
+        set((state) => ({
+          notes: state.notes.map(n => n.id === id ? { ...n, deleted_at: new Date().toISOString() } : n)
+        }))
+      },
       moveNote: (noteId, targetWallId) => set((state) => ({
         notes: state.notes.map(n => n.id === noteId ? { ...n, wall_id: targetWallId, updated_at: new Date().toISOString() } : n)
       })),
@@ -604,13 +640,21 @@ export const useTrackerStore = create<TrackerState>()(
       updateCategory: (id, category) => set((state) => ({
         categories: state.categories.map(c => c.id === id ? { ...c, ...category, updated_at: new Date().toISOString() } : c)
       })),
-      deleteCategory: (id) => set((state) => ({
-        categories: state.categories.map(c => c.id === id ? { ...c, deleted_at: new Date().toISOString() } : c)
-      })),
+      deleteCategory: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('tracker_categories', id, userId)
+        set((state) => ({
+          categories: state.categories.map(c => c.id === id ? { ...c, deleted_at: new Date().toISOString() } : c)
+        }))
+      },
       addEntry: (entry) => set((state) => ({ entries: [entry, ...state.entries] })),
-      deleteEntry: (id) => set((state) => ({
-        entries: state.entries.map(e => e.id === id ? { ...e, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } : e)
-      })),
+      deleteEntry: (id) => {
+        const userId = get().user?.id || null
+        immediateSyncDelete('tracker_entries', id, userId)
+        set((state) => ({
+          entries: state.entries.map(e => e.id === id ? { ...e, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } : e)
+        }))
+      },
       clearData: () => set({ categories: [], entries: [] }),
     }),
     {

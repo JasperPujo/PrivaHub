@@ -292,12 +292,17 @@ export async function fullSync(userId: string, stores: Record<string, {
       const pullResult = await syncPull(table, userId, fromDbRow, effectiveSince)
       const remoteData = pullResult.success ? pullResult.data : []
 
-      // 3. 合并远程数据到本地（基于 updated_at 冲突解决，本地 >= 远程时保留本地）
+      // 3. 合并远程数据到本地
+      // 关键：如果本地已删除（deleted_at 存在），即使远程没有删除标记，也保留删除状态
       if (remoteData.length > 0) {
         const localMap = new Map(localData.map((item: any) => [item.id, item]))
         for (const item of remoteData) {
           if (!item?.id) continue
           const existing = localMap.get(item.id)
+          // 如果本地已删除，强制保留删除状态
+          if (existing?.deleted_at && !item.deleted_at) {
+            item.deleted_at = existing.deleted_at
+          }
           const merged = mergeRecords(existing, item)
           localMap.set(item.id, merged)
         }

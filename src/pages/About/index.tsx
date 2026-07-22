@@ -26,7 +26,16 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
-    version: 'V1.5.3',
+    version: 'V1.5.5',
+    date: '2026-07-22',
+    changes: [
+      '修复：删除操作立即同步 deleted_at 到 Supabase，不再等全量同步',
+      '修复：合并时本地已删除记录不会被远程未删除状态覆盖',
+      '优化：实时记录日期改为两行显示（日期+时间分开），更清晰',
+    ]
+  },
+  {
+    version: 'V1.5.4',
     date: '2026-07-22',
     changes: [
       '修复：随心贴 content 渲染崩溃（兼容 string 和对象格式）',
