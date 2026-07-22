@@ -320,7 +320,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.5.1</span>
+            <span className="text-[#222] font-medium">V1.5.4</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>

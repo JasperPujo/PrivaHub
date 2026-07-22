@@ -90,12 +90,13 @@ const Home: React.FC = () => {
     }
   } catch {}
 
-  // 最近3条实时记录
+  // 最近2条实时记录
   const recentTrackerEntries = trackerEntries
     .filter(e => !e.deleted_at)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 3)
+    .slice(0, 2)
   const categoryMap = new Map(trackerCategories.filter(c => !c.deleted_at).map(c => [c.id, c]))
+  const todayStrShort = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 
   return (
     <div className="page-container">
@@ -300,10 +301,15 @@ const Home: React.FC = () => {
               <div className="space-y-1.5">
                 {recentTrackerEntries.map(entry => {
                   const cat = categoryMap.get(entry.category_id)
-                  const time = new Date(entry.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                  const entryDate = new Date(entry.timestamp)
+                  const isToday = entryDate.toDateString() === new Date().toDateString()
+                  const dateStr = isToday ? '' : entryDate.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+                  const timeStr = entryDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
                   return (
                     <div key={entry.id} className="flex items-center gap-2 text-sm">
-                      <span className="text-xs text-[var(--text-tertiary)] w-10 flex-shrink-0">{time}</span>
+                      <span className="text-xs text-[var(--text-tertiary)] flex-shrink-0 w-16">
+                        {dateStr && <span>{dateStr} </span>}{timeStr}
+                      </span>
                       <span className="text-xs text-primary-600 font-medium truncate">{cat?.name || '未分类'}</span>
                       {entry.note && <span className="text-xs text-[var(--text-tertiary)] truncate">{entry.note}</span>}
                     </div>
