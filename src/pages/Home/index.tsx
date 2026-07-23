@@ -290,36 +290,35 @@ const Home: React.FC = () => {
           </button>
 
           {/* 最近记录（实时数据，非链接） */}
-          <div className="card-hover text-left">
-            <div className="flex items-center justify-between mb-3">
+          <div className="card-hover text-left flex flex-col" style={{ minHeight: '140px' }}>
+            <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-button bg-primary-600 flex items-center justify-center">
                 <Activity size={20} className="text-white" />
               </div>
             </div>
-            <p className="text-sm text-[var(--text-secondary)] mt-0.5">实时记录</p>
-            {recentTrackerEntries.length > 0 ? (
-              <div className="space-y-1.5">
-                {recentTrackerEntries.map(entry => {
-                  const cat = categoryMap.get(entry.category_id)
-                  const entryDate = new Date(entry.timestamp)
-                  const isToday = entryDate.toDateString() === new Date().toDateString()
-                  const dateDisplay = isToday ? '今天' : `${entryDate.getMonth() + 1}/${entryDate.getDate()}`
-                  const timeStr = entryDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-                  return (
-                    <div key={entry.id} className="flex items-center gap-2 text-sm">
-                      <span className="text-xs text-[var(--text-tertiary)] flex-shrink-0 leading-tight text-right" style={{ minWidth: '52px' }}>
-                        <div>{dateDisplay}</div>
-                        <div>{timeStr}</div>
-                      </span>
-                      <span className="text-xs text-primary-600 font-medium truncate">{cat?.name || '未分类'}</span>
-                      {entry.note && <span className="text-xs text-[var(--text-tertiary)] truncate">{entry.note}</span>}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-[var(--text-tertiary)]">暂无记录</p>
-            )}
+            <p className="text-sm text-[var(--text-secondary)] mt-2 mb-2">实时记录</p>
+            <div className="flex-1 flex flex-col justify-center">
+              {recentTrackerEntries.length > 0 ? (
+                <div className="space-y-2">
+                  {recentTrackerEntries.map(entry => {
+                    const cat = categoryMap.get(entry.category_id)
+                    const entryDate = new Date(entry.timestamp)
+                    const isToday = entryDate.toDateString() === new Date().toDateString()
+                    const dateDisplay = isToday ? '' : `${entryDate.getMonth() + 1}/${entryDate.getDate()} `
+                    const timeStr = entryDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                    return (
+                      <div key={entry.id} className="flex items-center gap-2">
+                        <span className="text-xs text-[var(--text-tertiary)] flex-shrink-0">{dateDisplay}{timeStr}</span>
+                        <span className="text-xs text-primary-600 font-medium truncate">{cat?.name || '未分类'}</span>
+                        {entry.note && <span className="text-xs text-[var(--text-tertiary)] truncate">{entry.note}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--text-tertiary)]">暂无记录</p>
+              )}
+            </div>
           </div>
         </div>
 
