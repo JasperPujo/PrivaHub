@@ -90,9 +90,11 @@ const Home: React.FC = () => {
     }
   } catch {}
 
-  // 最近2条实时记录
+  const activeCategoryIds = new Set(trackerCategories.filter(c => !c.deleted_at).map(c => c.id))
+
+  // 最近2条实时记录（排除分类已删除的）
   const recentTrackerEntries = trackerEntries
-    .filter(e => !e.deleted_at)
+    .filter(e => !e.deleted_at && activeCategoryIds.has(e.category_id))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 2)
   const categoryMap = new Map(trackerCategories.filter(c => !c.deleted_at).map(c => [c.id, c]))

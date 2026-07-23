@@ -26,6 +26,13 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: 'V1.5.9',
+    date: '2026-07-23',
+    changes: [
+      '修复：实时记录卡片不再显示已删除分类的记录（避免显示"未分类"）',
+    ]
+  },
+  {
     version: 'V1.5.8',
     date: '2026-07-23',
     changes: [
@@ -265,7 +272,7 @@ const About: React.FC = () => {
         const response = await fetch('https://api.github.com/repos/JasperPujo/PrivaHub/releases/latest')
         const data = await response.json()
         const latestVersion = data.tag_name.replace('v', '')
-        const currentVersion = '1.5.8'
+        const currentVersion = '1.5.9'
         const compareVersions = (a: string, b: string) => {
           const partsA = a.split('.').map(Number)
           const partsB = b.split('.').map(Number)
@@ -352,7 +359,7 @@ const About: React.FC = () => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-[#777]">当前版本</span>
-            <span className="text-[#222] font-medium">V1.5.8</span>
+            <span className="text-[#222] font-medium">V1.5.9</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#777]">构建日期</span>
@@ -449,7 +456,7 @@ const About: React.FC = () => {
         <h2 className="text-base font-semibold text-[#222] mb-3">检查更新</h2>
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-[#555]">当前版本 V1.5.8</span>
+          <span className="text-sm text-[#555]">当前版本 V1.5.9</span>
           <button
             onClick={checkForUpdate}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
