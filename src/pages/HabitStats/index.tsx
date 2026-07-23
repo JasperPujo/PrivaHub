@@ -189,12 +189,133 @@ const HabitStatsPage: React.FC = () => {
       return { indicators, data }
     }
 
+    // 消极习惯专用雷达图：间隔越长越好
+    const buildRadarForNegativeHabits = (habits: typeof filteredHabits) => {
+      if (habits.length === 0) return null
+
+      const indicators = [
+        { name: '近7天避免率', max: 100 },
+        { name: '近30天避免率', max: 100 },
+        { name: '当前间隔天数', max: 7 },
+        { name: '最长间隔天数', max: 30 },
+        { name: '平均间隔天数', max: 14 },
+      ]
+
+      const data = habits.map(habit => {
+        const checkinSet = new Set(habit.checkins.map(c => c.date))
+
+        // 近7天避免率 = 未打卡天数占比
+        let count7 = 0
+        for (let i = 0; i < 7; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          if (checkinSet.has(ds)) count7++
+        }
+        const avoidRate7 = Math.round(((7 - count7) / 7) * 100)
+
+        // 近30天避免率
+        let count30 = 0
+        for (let i = 0; i < 30; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          if (checkinSet.has(ds)) count30++
+        }
+        const avoidRate30 = Math.round(((30 - count30) / 30) * 100)
+
+        // 当前间隔天数（距离上次打卡多少天）
+        const sortedDates = habit.checkins.map(c => c.date).sort()
+        let currentGap = 0
+        if (sortedDates.length > 0) {
+          const last = new Date(sortedDates[sortedDates.length - 1] + 'T00:00:00')
+          const now = new Date()
+          now.setHours(0, 0, 0, 0)
+          currentGap = Math.floor((now.getTime() - last.getTime()) / (24 * 60 * 60 * 1000))
+        } else {
+          currentGap = Math.max(1, Math.ceil((Date.now() - new Date(habit.created_at).getTime()) / (24 * 60 * 60 * 1000)))
+        }
+
+        // 最长间隔天数
+        let maxGap = 0
+        let avgGap = 0
+        if (sortedDates.length >= 2) {
+          const gaps: number[] = []
+          for (let i = 1; i < sortedDates.length; i++) {
+            const prev = new Date(sortedDates[i - 1] + 'T00:00:00')
+            const curr = new Date(sortedDates[i] + 'T00:00:00')
+            const gap = Math.floor((curr.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000))
+            gaps.push(gap)
+            maxGap = Math.max(maxGap, gap)
+          }
+          // 也算上从最后一次打卡到现在的间隔
+          const lastGap = currentGap
+          maxGap = Math.max(maxGap, lastGap)
+          avgGap = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length * 10) / 10
+        } else if (sortedDates.length === 1) {
+          maxGap = currentGap
+          avgGap = currentGap
+        }
+
+        return { name: habit.name, value: [avoidRate7, avoidRate30, currentGap, maxGap, avgGap] }
+      })
+
+      const maxCurrentGap = Math.max(7, ...data.map(d => d.value[2]))
+      const maxGapVal = Math.max(30, ...data.map(d => d.value[3]))
+      const maxAvgGap = Math.max(14, ...data.map(d => d.value[4]))
+      indicators[2].max = maxCurrentGap
+      indicators[3].max = maxGapVal
+      indicators[4].max = maxAvgGap
+
+      return { indicators, data }
+    }
+
+    // 消极习惯间隔趋势折线图（每次打卡之间的间隔天数）
+    const negativeIntervalTrend: { date: string; value: number }[] = []
+    const negativeHabitsForTrend = filteredHabits.filter(h => h.type === 'negative')
+    if (negativeHabitsForTrend.length > 0) {
+      // 取所有消极习惯的打卡日期，按时间排序，计算每次间隔
+      const allDates: { date: string; habit: string }[] = []
+      for (const habit of negativeHabitsForTrend) {
+        for (const c of habit.checkins) {
+          allDates.push({ date: c.date, habit: habit.name })
+        }
+      }
+      allDates.sort((a, b) => a.date.localeCompare(b.date))
+      // 按周聚合：每周的平均间隔
+      const weeklyIntervals: { week: string; gaps: number[] }[] = []
+      let currentWeek: { week: string; gaps: number[] } | null = null
+      let prevDate: Date | null = null
+      for (const item of allDates) {
+        const d = new Date(item.date + 'T00:00:00')
+        const weekLabel = `${d.getMonth() + 1}/${Math.ceil(d.getDate() / 7) * 7}`
+        if (!currentWeek || currentWeek.week !== weekLabel) {
+          if (currentWeek && currentWeek.gaps.length > 0) {
+            weeklyIntervals.push(currentWeek)
+          }
+          currentWeek = { week: weekLabel, gaps: [] }
+        }
+        if (prevDate) {
+          const gap = Math.floor((d.getTime() - prevDate.getTime()) / (24 * 60 * 60 * 1000))
+          if (gap > 0) currentWeek.gaps.push(gap)
+        }
+        prevDate = d
+      }
+      if (currentWeek && currentWeek.gaps.length > 0) weeklyIntervals.push(currentWeek)
+      // 取最近12周
+      const recentWeeks = weeklyIntervals.slice(-12)
+      for (const w of recentWeeks) {
+        const avg = Math.round(w.gaps.reduce((a, b) => a + b, 0) / w.gaps.length * 10) / 10
+        negativeIntervalTrend.push({ date: w.week, value: avg })
+      }
+    }
+
     const positiveHabitsFiltered = filteredHabits.filter(h => h.type === 'positive')
     const negativeHabitsFiltered = filteredHabits.filter(h => h.type === 'negative')
     const positiveRadar = buildRadarForHabits(positiveHabitsFiltered)
-    const negativeRadar = buildRadarForHabits(negativeHabitsFiltered)
+    const negativeRadar = buildRadarForNegativeHabits(negativeHabitsFiltered)
 
-    return { totalCheckIns, currentStreak, maxStreak, completionRate, last30DaysData, last30DaysRateData, weeklyData, positiveRadar, negativeRadar }
+    return { totalCheckIns, currentStreak, maxStreak, completionRate, last30DaysData, last30DaysRateData, weeklyData, positiveRadar, negativeRadar, negativeIntervalTrend }
   }, [filteredHabits])
 
   return (
@@ -257,7 +378,7 @@ const HabitStatsPage: React.FC = () => {
                   color="#22c55e"
                 />
                 <RadarChart
-                  title="消极习惯记录情况"
+                  title="消极习惯控制情况"
                   indicators={stats.negativeRadar.indicators}
                   data={stats.negativeRadar.data}
                   color="#f97316"
@@ -272,12 +393,17 @@ const HabitStatsPage: React.FC = () => {
               />
             ) : stats.negativeRadar ? (
               <RadarChart
-                title="消极习惯记录情况"
+                title="消极习惯控制情况"
                 indicators={stats.negativeRadar.indicators}
                 data={stats.negativeRadar.data}
                 color="#f97316"
               />
             ) : null}
+
+            {/* 消极习惯间隔趋势（折线图，间隔越长越好） */}
+            {stats.negativeIntervalTrend.length > 1 && (
+              <LineChart title="消极习惯打卡间隔趋势（越长越好）" data={stats.negativeIntervalTrend} color="#f97316" />
+            )}
 
             {/* 习惯类型分组说明 */}
             {(() => {
